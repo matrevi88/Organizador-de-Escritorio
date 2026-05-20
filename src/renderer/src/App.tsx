@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useStore } from './store/useStore'
 import { GroupCard } from './components/GroupCard'
 import { ConfigDrawer } from './components/ConfigDrawer'
@@ -16,6 +16,7 @@ export default function App() {
   const [configOpen, setConfigOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingGroup, setEditingGroup] = useState<Group | null>(null)
+  const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null)
   const [toast, setToast] = useState('')
   const [toastVisible, setToastVisible] = useState(false)
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -183,13 +184,15 @@ export default function App() {
       </div>
 
       {/* Groups */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 flex flex-col gap-2">
+      <div className="flex-1 overflow-y-auto px-3 py-2 grid grid-cols-2 gap-2 content-start">
         {visibleGroups.map(g => (
           <GroupCard
             key={g.id}
             group={g}
+            compact
             onToggleCollapse={toggleCollapse}
             onToggleVisible={handleToggleVisible}
+            onExpand={id => setExpandedGroupId(id)}
             onDragStart={id => { dragRef.current = id }}
             onDrop={toId => {
               if (dragRef.current && dragRef.current !== toId) {
@@ -208,7 +211,7 @@ export default function App() {
         {/* Agregar grupo */}
         <button
           onClick={() => { setEditingGroup(null); setModalOpen(true) }}
-          className="flex items-center justify-center gap-2 py-2.5 rounded-[12px] text-[12px] text-white/35 transition-all hover:text-[#7c6af7] hover:border-[#7c6af7] hover:bg-[rgba(124,106,247,0.05)]"
+          className="col-span-2 flex items-center justify-center gap-2 py-2.5 rounded-[12px] text-[12px] text-white/35 transition-all hover:text-[#7c6af7] hover:border-[#7c6af7] hover:bg-[rgba(124,106,247,0.05)]"
           style={{ border: '1px dashed rgba(255,255,255,0.15)' }}
         >
           + Nuevo grupo
@@ -228,6 +231,21 @@ export default function App() {
         onSave={() => { setConfigOpen(false); showToast('Configuración guardada ✓') }}
       />
 
+      {/* Overlay grupo expandido */}
+      {expandedGroupId && (() => {
+        const g = groups.find(x => x.id === expandedGroupId)
+        if (!g) return null
+        return (
+          <GroupExpandOverlay
+            group={g}
+            onClose={() => setExpandedGroupId(null)}
+            onOpenApp={handleOpenApp}
+            onAddFiles={handleAddFiles}
+            onRemoveApp={removeAppFromGroup}
+          />
+        )
+      })()}
+
       {/* Modal nuevo/editar grupo */}
       <GroupModal
         open={modalOpen}
@@ -236,6 +254,103 @@ export default function App() {
         onSave={handleSaveGroup}
         onDelete={editingGroup ? handleDeleteGroup : undefined}
       />
+    </div>
+  )
+}
+
+function GroupExpandOverlay({
+  group, onClose, onOpenApp, onAddFiles, onRemoveApp
+}: {
+  group: Group
+  onClose: () => void
+  onOpenApp: (app: AppItem) => void
+  onAddFiles: (groupId: string) => void
+  onRemoveApp: (groupId: string, appId: string) => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="absolute inset-0 z-[200] flex flex-col rounded-[20px] overflow-hidden"
+      style={{ background: 'rgba(12,10,28,0.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+    >
+      {/* Header del overlay */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="w-[8px] h-[8px] rounded-full" style={{ background: group.color }} />
+          <span className="text-[13px] font-semibold text-white/80 uppercase tracking-[0.8px]">
+            {group.icon} {group.name}
+          </span>
+          <span className="text-[10px] text-white/30 bg-white/5 border border-white/10 rounded-[8px] px-1.5 py-px">
+            {group.apps.length}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            className="w-[26px] h-[26px] rounded-[8px] flex items-center justify-center text-[12px] font-bold text-white/40 bg-white/5 border border-white/10 hover:bg-[rgba(124,106,247,0.15)] hover:text-[#7c6af7] transition-all"
+            onClick={() => onAddFiles(group.id)}
+            title="Agregar"
+          >+</button>
+          <button
+            className="w-[26px] h-[26px] rounded-[8px] flex items-center justify-center text-[13px] text-white/40 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-all"
+            onClick={onClose}
+            title="Cerrar (Esc)"
+          >✕</button>
+        </div>
+      </div>
+
+      {/* Grid de apps */}
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {group.apps.length === 0 ? (
+          <button
+            className="w-full flex flex-col items-center gap-2 py-8 text-white/25 text-[12px] hover:text-white/40 transition-colors"
+            onClick={() => onAddFiles(group.id)}
+          >
+            <span className="text-2xl">+</span>
+            Arrastra archivos aquí o toca +
+          </button>
+        ) : (
+          <div className="grid grid-cols-4 gap-2">
+            {group.apps.map(app => (
+              <div key={app.id} className="relative group/app">
+                <button
+                  className="w-full flex flex-col items-center gap-1 p-2 rounded-[12px] hover:bg-white/8 transition-colors"
+                  onClick={() => onOpenApp(app)}
+                  title={app.path ? `${app.name}\n${app.path}` : app.name}
+                >
+                  {app.iconDataUrl ? (
+                    <img src={app.iconDataUrl} alt={app.name} className="w-11 h-11 rounded-[11px] object-contain" />
+                  ) : (
+                    <div
+                      className="w-11 h-11 rounded-[11px] flex items-center justify-center text-2xl shadow-md"
+                      style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}
+                    >{app.icon}</div>
+                  )}
+                  <span
+                    className="text-[10px] text-white/50 group-hover/app:text-white/80 transition-colors w-full text-center leading-tight"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                  >{app.name}</span>
+                </button>
+                {/* Botón quitar */}
+                <button
+                  className="absolute -top-1 -right-1 w-[16px] h-[16px] rounded-full bg-red-500/80 text-white text-[9px] flex items-center justify-center opacity-0 group-hover/app:opacity-100 transition-opacity hover:bg-red-500"
+                  onClick={() => onRemoveApp(group.id, app.id)}
+                  title="Quitar"
+                >✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Hint inferior */}
+      <div className="px-4 py-2 flex-shrink-0 text-center">
+        <span className="text-[10px] text-white/20">Doble click en otro grupo para cambiarlo · Esc para cerrar</span>
+      </div>
     </div>
   )
 }

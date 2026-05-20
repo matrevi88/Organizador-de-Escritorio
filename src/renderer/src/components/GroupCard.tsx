@@ -3,8 +3,10 @@ import type { Group, AppItem } from '../types'
 
 interface Props {
   group: Group
+  compact?: boolean
   onToggleCollapse: (id: string) => void
   onToggleVisible:  (id: string) => void
+  onExpand?:        (id: string) => void
   onDragStart:      (id: string) => void
   onDrop:           (toId: string) => void
   onAddFiles:       (groupId: string) => void
@@ -20,7 +22,7 @@ interface CtxMenu {
 }
 
 export function GroupCard({
-  group, onToggleCollapse, onToggleVisible,
+  group, compact = false, onToggleCollapse, onToggleVisible, onExpand,
   onDragStart, onDrop, onAddFiles, onDropFiles, onOpenApp, onRemoveApp
 }: Props) {
   const [dropOver, setDropOver]   = useState(false)
@@ -67,32 +69,35 @@ export function GroupCard({
       >
         {/* Header */}
         <div
-          className="flex items-center justify-between px-3 py-2.5 cursor-pointer select-none hover:bg-white/5 transition-colors"
+          className={`flex flex-col cursor-pointer select-none hover:bg-white/5 transition-colors ${compact ? 'px-2 pt-2 pb-1.5' : 'px-3 pt-2.5 pb-1.5'}`}
           onClick={() => onToggleCollapse(group.id)}
+          onDoubleClick={() => onExpand?.(group.id)}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: group.color }} />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.8px] text-white/50 truncate">
+          {/* Fila 1: nombre */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: group.color }} />
+            <span className={`font-semibold uppercase tracking-[0.6px] text-white/60 truncate ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
               {group.icon} {group.name}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-            <span className="text-[10px] text-white/40 bg-white/5 border border-white/10 rounded-[10px] px-1.5 py-px">
+          {/* Fila 2: acciones */}
+          <div className="flex items-center gap-1 mt-1.5">
+            <span className="text-[9px] text-white/40 bg-white/5 border border-white/10 rounded-[8px] px-1 py-px">
               {group.apps.length}
             </span>
             <button
-              className="w-[22px] h-[22px] rounded-md flex items-center justify-center text-[13px] font-bold text-white/40 hover:bg-white/10 hover:text-[#7c6af7] transition-all"
+              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-white/40 hover:bg-white/10 hover:text-[#7c6af7] transition-all"
               onClick={e => { e.stopPropagation(); onAddFiles(group.id) }}
               title="Agregar archivo, carpeta o app"
             >+</button>
             <button
-              className="w-[22px] h-[22px] rounded-md flex items-center justify-center text-[11px] text-white/40 hover:bg-white/10 hover:text-white transition-all"
+              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[10px] text-white/40 hover:bg-white/10 hover:text-white transition-all"
               onClick={e => { e.stopPropagation(); onToggleVisible(group.id) }}
               title={group.visible ? 'Ocultar grupo' : 'Mostrar grupo'}
             >{group.visible ? '👁' : '🙈'}</button>
             <span
-              className="text-[10px] text-white/40 transition-transform duration-200 inline-block"
+              className="text-[9px] text-white/40 transition-transform duration-200 inline-block ml-auto"
               style={{ transform: group.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
             >▾</span>
           </div>
@@ -107,20 +112,20 @@ export function GroupCard({
 
         {/* Apps grid */}
         {!group.collapsed && group.visible && !dropOver && (
-          <div className="grid grid-cols-4 gap-1.5 px-2.5 pb-3 pt-0.5">
+          <div className={`grid gap-1 pb-2.5 pt-0.5 ${compact ? 'grid-cols-3 px-1.5' : 'grid-cols-4 px-2.5'}`}>
             {group.apps.length === 0 ? (
               <button
-                className="col-span-4 flex flex-col items-center gap-1.5 py-4 text-white/25 text-[11px] hover:text-white/40 transition-colors"
+                className={`${compact ? 'col-span-3' : 'col-span-4'} flex flex-col items-center gap-1 py-3 text-white/25 text-[10px] hover:text-white/40 transition-colors`}
                 onClick={() => onAddFiles(group.id)}
               >
-                <span className="text-xl">+</span>
-                Arrastra archivos aquí o toca +
+                <span className="text-lg">+</span>
+                Arrastra o toca +
               </button>
             ) : (
               group.apps.map(app => (
                 <button
                   key={app.id}
-                  className="flex flex-col items-center gap-1 p-1.5 rounded-[10px] hover:bg-white/8 transition-colors group/app"
+                  className="flex flex-col items-center gap-0.5 p-1 rounded-[8px] hover:bg-white/8 transition-colors group/app"
                   onClick={() => onOpenApp(app)}
                   onContextMenu={e => openCtxMenu(e, app)}
                   title={app.path ? `${app.name}\n${app.path}` : app.name}
@@ -129,15 +134,15 @@ export function GroupCard({
                     <img
                       src={app.iconDataUrl}
                       alt={app.name}
-                      className="w-10 h-10 rounded-[11px] object-contain"
+                      className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-[9px] object-contain`}
                     />
                   ) : (
                     <div
-                      className="w-10 h-10 rounded-[11px] flex items-center justify-center text-xl shadow-md"
+                      className={`${compact ? 'w-8 h-8 text-lg' : 'w-10 h-10 text-xl'} rounded-[9px] flex items-center justify-center shadow-md`}
                       style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}
                     >{app.icon}</div>
                   )}
-                  <span className="text-[9.5px] text-white/45 group-hover/app:text-white/80 transition-colors w-full text-center leading-tight overflow-hidden"
+                  <span className="text-[9px] text-white/45 group-hover/app:text-white/80 transition-colors w-full text-center leading-tight overflow-hidden"
                     style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                     {app.name}
                   </span>
