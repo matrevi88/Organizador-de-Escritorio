@@ -40,12 +40,10 @@
     "productName": "DeskFlow",
     "directories": { "output": "dist" },
     "win": {
-      "target": "nsis",
-      "icon": "resources/icon.ico"
+      "target": "nsis"
     },
     "mac": {
       "target": "dmg",
-      "icon": "resources/icon.icns",
       "category": "public.app-category.utilities"
     },
     "linux": {

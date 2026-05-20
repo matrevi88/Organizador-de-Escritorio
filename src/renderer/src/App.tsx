@@ -79,14 +79,32 @@ export default function App() {
     if (g) { setEditingGroup(g); setModalOpen(true) }
   }
 
+  // Agregar apps (.exe / .lnk) via selector
+  const handleAddApps = async (groupId: string) => {
+    const files = await window.api?.pickApps()
+    if (!files?.length) return
+    for (const f of files) {
+      addAppToGroup(groupId, { name: f.name, icon: f.icon ?? '🖥️', iconDataUrl: f.iconDataUrl, path: f.path })
+    }
+    showToast(`${files.length} app${files.length > 1 ? 's' : ''} agregada${files.length > 1 ? 's' : ''} ✓`)
+  }
+
   // Agregar archivos/carpetas via selector de archivos
   const handleAddFiles = async (groupId: string) => {
     const files = await window.api?.pickFiles()
     if (!files?.length) return
     for (const f of files) {
-      addAppToGroup(groupId, { name: f.name, icon: '📄', iconDataUrl: f.iconDataUrl, path: f.path })
+      addAppToGroup(groupId, { name: f.name, icon: f.icon ?? '📄', iconDataUrl: f.iconDataUrl, path: f.path })
     }
     showToast(`${files.length} ítem${files.length > 1 ? 's' : ''} agregado${files.length > 1 ? 's' : ''} ✓`)
+  }
+
+  // Emoji fallback según extensión (renderer)
+  const fileEmoji = (filePath: string) => {
+    const ext = filePath.split('.').pop()?.toLowerCase() ?? ''
+    if (['exe', 'lnk', 'app', 'dmg', 'pkg'].includes(ext)) return '🖥️'
+    if (!filePath.includes('.') || filePath.endsWith('/') || filePath.endsWith('\\')) return '📁'
+    return '📄'
   }
 
   // Agregar archivos/carpetas via drag & drop desde el OS
@@ -98,7 +116,7 @@ export default function App() {
       const result = await window.api?.getFileIcon(filePath)
       addAppToGroup(groupId, {
         name: result?.name || file.name,
-        icon: '📄',
+        icon: fileEmoji(filePath),
         iconDataUrl: result?.iconDataUrl || '',
         path: filePath
       })
@@ -161,7 +179,7 @@ export default function App() {
             ⊞
           </div>
           DeskFlow
-          <span className="text-white/30 font-normal text-[11px]">v0.1</span>
+          <span className="font-bold text-[11px]" style={{ color: '#f472b6' }}>v0.2-dev</span>
         </div>
         <div className="flex gap-1.5">
           <IconBtn title="Sincronizar" onClick={() => showToast('Sincronizado ☁️')}>↻</IconBtn>
@@ -221,6 +239,7 @@ export default function App() {
               }
               dragRef.current = null
             }}
+            onAddApps={handleAddApps}
             onAddFiles={handleAddFiles}
             onDropFiles={handleDropFiles}
             onOpenApp={handleOpenApp}

@@ -9,6 +9,7 @@ interface PickedFile {
   path: string
   name: string
   iconDataUrl: string
+  icon: string
 }
 
 interface Window {
@@ -16,6 +17,7 @@ interface Window {
     hideWindow:       () => void
     toggleWindow:     () => void
     setPanelPosition: (pos: 'left' | 'right' | 'float') => void
+    pickApps:         () => Promise<PickedFile[]>
     pickFiles:        () => Promise<PickedFile[]>
     getFileIcon:      (path: string) => Promise<FileIconResult>
     openFile:         (path: string) => void

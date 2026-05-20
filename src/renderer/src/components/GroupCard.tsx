@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+// useRef se mantiene para ContextMenu
 import type { Group, AppItem } from '../types'
 
 function AppIcon({ item, size }: { item: AppItem; size: 'sm' | 'md' | 'lg' }) {
@@ -30,6 +31,7 @@ interface Props {
   onExpand?:        (id: string) => void
   onDragStart:      (id: string) => void
   onDrop:           (toId: string) => void
+  onAddApps:        (groupId: string) => void
   onAddFiles:       (groupId: string) => void
   onDropFiles:      (groupId: string, files: FileList) => void
   onOpenApp:        (app: AppItem) => void
@@ -44,10 +46,10 @@ interface CtxMenu {
 
 export function GroupCard({
   group, compact = false, onToggleCollapse, onToggleVisible, onExpand,
-  onDragStart, onDrop, onAddFiles, onDropFiles, onOpenApp, onRemoveApp
+  onDragStart, onDrop, onAddApps, onAddFiles, onDropFiles, onOpenApp, onRemoveApp
 }: Props) {
-  const [dropOver, setDropOver]   = useState(false)
-  const [ctxMenu, setCtxMenu]     = useState<CtxMenu | null>(null)
+  const [dropOver, setDropOver] = useState(false)
+  const [ctxMenu, setCtxMenu]   = useState<CtxMenu | null>(null)
 
   const handleFileDragOver = (e: React.DragEvent) => {
     if (e.dataTransfer.types.includes('Files')) {
@@ -109,8 +111,13 @@ export function GroupCard({
             </span>
             <button
               className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-white/40 hover:bg-white/10 hover:text-[#7c6af7] transition-all"
+              onClick={e => { e.stopPropagation(); onAddApps(group.id) }}
+              title="Agregar app (.exe / .lnk)"
+            >🖥</button>
+            <button
+              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-white/40 hover:bg-white/10 hover:text-[#7c6af7] transition-all"
               onClick={e => { e.stopPropagation(); onAddFiles(group.id) }}
-              title="Agregar archivo, carpeta o app"
+              title="Agregar archivo o carpeta"
             >+</button>
             <button
               className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[10px] text-white/40 hover:bg-white/10 hover:text-white transition-all"

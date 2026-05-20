@@ -146,17 +146,26 @@ ipcMain.on('set-start-with-os', (_event, enable: boolean) => {
   })
 })
 
-// Abrir selector de archivos/carpetas
-ipcMain.handle('pick-files', async () => {
-  if (!mainWindow) return []
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Agregar a DeskFlow',
-    properties: ['openFile', 'openDirectory', 'multiSelections'],
-    buttonLabel: 'Agregar'
-  })
-  if (result.canceled) return []
+// Emoji fallback según tipo de archivo
+function fallbackIcon(filePath: string): string {
+  const ext = extname(filePath).toLowerCase()
+  if (['.exe', '.lnk', '.app', '.dmg', '.pkg'].includes(ext)) return '🖥️'
+  if (!ext) return '📁'  // carpeta (sin extensión)
+  return '📄'
+}
 
-  const items = await Promise.all(result.filePaths.map(async (filePath) => {
+// Default path: Program Files en Windows (donde están los .exe reales), Applications en Mac
+function appsDefaultPath(): string {
+  if (process.platform === 'win32') {
+    return process.env['ProgramFiles'] || 'C:\\Program Files'
+  }
+  if (process.platform === 'darwin') return '/Applications'
+  return app.getPath('home')
+}
+
+// Procesar rutas seleccionadas → { path, name, iconDataUrl, icon }
+async function resolvePaths(filePaths: string[]) {
+  return Promise.all(filePaths.map(async (filePath) => {
     const name = basename(filePath, extname(filePath)) || basename(filePath)
     let iconDataUrl = ''
     try {
@@ -164,9 +173,40 @@ ipcMain.handle('pick-files', async () => {
       const { width } = icon.getSize()
       if (!icon.isEmpty() && width > 0) iconDataUrl = icon.toDataURL()
     } catch { /* sin ícono */ }
-    return { path: filePath, name, iconDataUrl }
+    return { path: filePath, name, iconDataUrl, icon: fallbackIcon(filePath) }
   }))
-  return items
+}
+
+// Selector de APPS (.exe / .lnk / .app) — sin openDirectory para que el filtro funcione
+ipcMain.handle('pick-apps', async () => {
+  if (!mainWindow) return []
+  const isWin = process.platform === 'win32'
+  const isMac = process.platform === 'darwin'
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Agregar aplicación',
+    defaultPath: appsDefaultPath(),
+    properties: ['openFile', 'multiSelections'],
+    filters: [
+      { name: 'Aplicaciones', extensions: isWin ? ['exe', 'lnk', 'bat', 'cmd', 'url', 'msi'] : isMac ? ['app'] : ['*'] },
+      { name: 'Todos los archivos', extensions: ['*'] }
+    ],
+    buttonLabel: 'Agregar'
+  })
+  if (result.canceled) return []
+  return resolvePaths(result.filePaths)
+})
+
+// Selector de ARCHIVOS / CARPETAS — sin filtro de tipo
+ipcMain.handle('pick-files', async () => {
+  if (!mainWindow) return []
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Agregar archivo o carpeta',
+    defaultPath: app.getPath('home'),
+    properties: ['openFile', 'openDirectory', 'multiSelections'],
+    buttonLabel: 'Agregar'
+  })
+  if (result.canceled) return []
+  return resolvePaths(result.filePaths)
 })
 
 // Obtener ícono de un archivo (drag & drop desde el OS)
