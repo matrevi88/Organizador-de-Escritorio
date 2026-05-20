@@ -1,0 +1,167 @@
+import { app, shell, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, dialog } from 'electron'
+import { join, basename, extname } from 'path'
+
+let mainWindow: BrowserWindow | null = null
+let tray: Tray | null = null
+
+function createWindow(): void {
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
+
+  mainWindow = new BrowserWindow({
+    width: 340,
+    height: screenHeight - 40,
+    x: screenWidth - 364,
+    y: 20,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    resizable: true,
+    skipTaskbar: true,
+    show: false,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.mjs'),
+      sandbox: false,
+      contextIsolation: true
+    }
+  })
+
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false })
+  mainWindow.on('ready-to-show', () => mainWindow?.show())
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  if (process.env['ELECTRON_RENDERER_URL']) {
+    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+  } else {
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+  }
+}
+
+function buildTrayIcon(): Electron.NativeImage {
+  const size = 16
+  const buf = Buffer.alloc(size * size * 4)
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4
+      const inSquare = x >= 2 && x <= 13 && y >= 2 && y <= 13
+      buf[i]     = inSquare ? 124 : 0
+      buf[i + 1] = inSquare ? 106 : 0
+      buf[i + 2] = inSquare ? 247 : 0
+      buf[i + 3] = inSquare ? 255 : 0
+    }
+  }
+  return nativeImage.createFromBuffer(buf, { width: size, height: size })
+}
+
+// Toggle global: muestra si está oculto, oculta si está visible
+function toggleWindow(): void {
+  if (!mainWindow) return
+  if (mainWindow.isVisible()) {
+    mainWindow.hide()
+  } else {
+    mainWindow.show()
+    mainWindow.focus()
+  }
+}
+
+function createTray(): void {
+  tray = new Tray(buildTrayIcon())
+  tray.setToolTip('DeskFlow  (Ctrl+Shift+D)')
+
+  const contextMenu = Menu.buildFromTemplate([
+    { label: '⊞ Mostrar DeskFlow', click: () => { mainWindow?.show(); mainWindow?.focus() } },
+    { label: 'Ocultar',            click: () => mainWindow?.hide() },
+    { type: 'separator' },
+    { label: 'Atajo: Ctrl+Shift+D', enabled: false },
+    { type: 'separator' },
+    { label: 'Salir', click: () => app.quit() }
+  ])
+
+  tray.setContextMenu(contextMenu)
+  tray.on('click', toggleWindow)
+  tray.on('double-click', toggleWindow)
+}
+
+// IPC desde el renderer ─────────────────────────────────────
+
+// Botón — : siempre oculta
+ipcMain.on('hide-window', () => mainWindow?.hide())
+
+// Atajo global también puede venir del renderer
+ipcMain.on('toggle-window', toggleWindow)
+
+// Cambiar posición del panel
+ipcMain.on('set-panel-position', (_event, pos: 'left' | 'right' | 'float') => {
+  if (!mainWindow) return
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
+  const winWidth = 340
+  const winHeight = sh - 40
+
+  // Bajar alwaysOnTop momentáneamente para que setPosition funcione en Windows
+  mainWindow.setAlwaysOnTop(false)
+
+  if (pos === 'right')      mainWindow.setPosition(sw - winWidth - 24, 20)
+  else if (pos === 'left')  mainWindow.setPosition(24, 20)
+  else                      mainWindow.setPosition(Math.round(sw / 2 - winWidth / 2), 20)
+
+  mainWindow.setSize(winWidth, winHeight)
+  mainWindow.setAlwaysOnTop(true)
+})
+
+// Abrir selector de archivos/carpetas
+ipcMain.handle('pick-files', async () => {
+  if (!mainWindow) return []
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Agregar a DeskFlow',
+    properties: ['openFile', 'openDirectory', 'multiSelections'],
+    buttonLabel: 'Agregar'
+  })
+  if (result.canceled) return []
+
+  const items = await Promise.all(result.filePaths.map(async (filePath) => {
+    const name = basename(filePath, extname(filePath)) || basename(filePath)
+    let iconDataUrl = ''
+    try {
+      const icon = await app.getFileIcon(filePath, { size: 'normal' })
+      iconDataUrl = icon.toDataURL()
+    } catch { /* sin ícono */ }
+    return { path: filePath, name, iconDataUrl }
+  }))
+  return items
+})
+
+// Obtener ícono de un archivo (drag & drop desde el OS)
+ipcMain.handle('get-file-icon', async (_event, filePath: string) => {
+  try {
+    const icon = await app.getFileIcon(filePath, { size: 'normal' })
+    const name = basename(filePath, extname(filePath)) || basename(filePath)
+    return { iconDataUrl: icon.toDataURL(), name }
+  } catch {
+    return { iconDataUrl: '', name: basename(filePath) }
+  }
+})
+
+// Abrir archivo/carpeta/app con su programa por defecto
+ipcMain.on('open-file', (_event, filePath: string) => {
+  shell.openPath(filePath)
+})
+
+// ────────────────────────────────────────────────────────────
+
+app.whenReady().then(() => {
+  app.setAppUserModelId('com.sistemasymas.deskflow')
+
+  createWindow()
+  createTray()
+
+  globalShortcut.register('CommandOrControl+Shift+D', toggleWindow)
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+})
+
+app.on('will-quit', () => globalShortcut.unregisterAll())
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
