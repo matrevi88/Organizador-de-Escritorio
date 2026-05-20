@@ -7,4 +7,7 @@ contextBridge.exposeInMainWorld('api', {
   pickFiles:        ()             => ipcRenderer.invoke('pick-files'),
   getFileIcon:      (path: string) => ipcRenderer.invoke('get-file-icon', path),
   openFile:         (path: string) => ipcRenderer.send('open-file', path),
+  loadStore:        (key: string)  => ipcRenderer.sendSync('load-store-sync', key),
+  saveStore:        (key: string, value: unknown) => ipcRenderer.send('save-store', key, value),
+  setStartWithOS:   (enable: boolean) => ipcRenderer.send('set-start-with-os', enable),
 })

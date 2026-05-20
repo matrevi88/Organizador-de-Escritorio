@@ -19,5 +19,8 @@ interface Window {
     pickFiles:        () => Promise<PickedFile[]>
     getFileIcon:      (path: string) => Promise<FileIconResult>
     openFile:         (path: string) => void
+    loadStore:        (key: string) => unknown
+    saveStore:        (key: string, value: unknown) => void
+    setStartWithOS:   (enable: boolean) => void
   }
 }

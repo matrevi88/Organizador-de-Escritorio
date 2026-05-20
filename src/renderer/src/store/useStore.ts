@@ -67,31 +67,28 @@ const DEFAULT_SETTINGS: Settings = {
   activeProfileId: 'personal'
 }
 
-const SETTINGS_KEY = 'deskflow_settings_v2'
-const GROUPS_KEY   = 'deskflow_groups_v2'
-
 function loadSettings(): Settings {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
+    const raw = window.api?.loadStore('settings')
     if (!raw) return DEFAULT_SETTINGS
-    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+    return { ...DEFAULT_SETTINGS, ...(raw as object) }
   } catch { return DEFAULT_SETTINGS }
 }
 
 function loadGroups(): Group[] {
   try {
-    const raw = localStorage.getItem(GROUPS_KEY)
+    const raw = window.api?.loadStore('groups')
     if (!raw) return DEFAULT_GROUPS
-    return JSON.parse(raw)
+    return raw as Group[]
   } catch { return DEFAULT_GROUPS }
 }
 
 function saveSettings(s: Settings) {
-  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) } catch {}
+  try { window.api?.saveStore('settings', s) } catch {}
 }
 
 function saveGroups(g: Group[]) {
-  try { localStorage.setItem(GROUPS_KEY, JSON.stringify(g)) } catch {}
+  try { window.api?.saveStore('groups', g) } catch {}
 }
 
 export function useStore() {
@@ -174,6 +171,9 @@ export function useStore() {
         // @ts-ignore
         window.electron?.ipcRenderer?.send('set-panel-position', pos)
       }
+    }
+    if (patch.startWithOS !== undefined) {
+      window.api?.setStartWithOS(patch.startWithOS)
     }
   }, [])
 

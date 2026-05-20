@@ -1,6 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import type { Group, AppItem } from '../types'
 
+function AppIcon({ item, size }: { item: AppItem; size: 'sm' | 'md' | 'lg' }) {
+  const [failed, setFailed] = useState(false)
+  const cls = size === 'sm' ? 'w-8 h-8 text-lg' : size === 'md' ? 'w-10 h-10 text-xl' : 'w-11 h-11 text-2xl'
+  if (!item.iconDataUrl || failed) {
+    return (
+      <div className={`${cls} rounded-[9px] flex items-center justify-center shadow-md`}
+        style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}>
+        {item.icon}
+      </div>
+    )
+  }
+  return (
+    <img
+      src={item.iconDataUrl}
+      alt={item.name}
+      className={`${cls} rounded-[9px] object-contain`}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 interface Props {
   group: Group
   compact?: boolean
@@ -130,18 +151,7 @@ export function GroupCard({
                   onContextMenu={e => openCtxMenu(e, app)}
                   title={app.path ? `${app.name}\n${app.path}` : app.name}
                 >
-                  {app.iconDataUrl ? (
-                    <img
-                      src={app.iconDataUrl}
-                      alt={app.name}
-                      className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-[9px] object-contain`}
-                    />
-                  ) : (
-                    <div
-                      className={`${compact ? 'w-8 h-8 text-lg' : 'w-10 h-10 text-xl'} rounded-[9px] flex items-center justify-center shadow-md`}
-                      style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}
-                    >{app.icon}</div>
-                  )}
+                  <AppIcon item={app} size={compact ? 'sm' : 'md'} />
                   <span className="text-[9px] text-white/45 group-hover/app:text-white/80 transition-colors w-full text-center leading-tight overflow-hidden"
                     style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                     {app.name}
@@ -226,10 +236,7 @@ function ContextMenu({ app, x, y, onOpen, onRemove, onClose }: CtxProps) {
         {/* Info del ítem */}
         <div className="px-3 pt-2.5 pb-2 border-b border-white/8">
           <div className="flex items-center gap-2">
-            {app.iconDataUrl
-              ? <img src={app.iconDataUrl} alt="" className="w-6 h-6 rounded-[6px] object-contain flex-shrink-0" />
-              : <span className="text-base flex-shrink-0">{app.icon}</span>
-            }
+            <AppIcon item={app} size="sm" />
             <div className="min-w-0">
               <div className="text-[12px] font-semibold truncate">{app.name}</div>
               {app.path && (

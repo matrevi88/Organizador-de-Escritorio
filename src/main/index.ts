@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, dialog } from 'electron'
 import { join, basename, extname } from 'path'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -84,6 +85,32 @@ function createTray(): void {
   tray.on('double-click', toggleWindow)
 }
 
+// Persistencia en userData ──────────────────────────────────
+
+function storePath() { return join(app.getPath('userData'), 'deskflow-store.json') }
+
+function readStore(): Record<string, unknown> {
+  try {
+    const p = storePath()
+    if (!existsSync(p)) return {}
+    return JSON.parse(readFileSync(p, 'utf-8'))
+  } catch { return {} }
+}
+
+function writeStore(data: Record<string, unknown>) {
+  try { writeFileSync(storePath(), JSON.stringify(data), 'utf-8') } catch {}
+}
+
+ipcMain.on('load-store-sync', (event, key: string) => {
+  event.returnValue = readStore()[key] ?? null
+})
+
+ipcMain.on('save-store', (_event, key: string, value: unknown) => {
+  const store = readStore()
+  store[key] = value
+  writeStore(store)
+})
+
 // IPC desde el renderer ─────────────────────────────────────
 
 // Botón — : siempre oculta
@@ -110,6 +137,15 @@ ipcMain.on('set-panel-position', (_event, pos: 'left' | 'right' | 'float') => {
   mainWindow.setAlwaysOnTop(true)
 })
 
+// Autostart con Windows
+ipcMain.on('set-start-with-os', (_event, enable: boolean) => {
+  app.setLoginItemSettings({
+    openAtLogin: enable,
+    openAsHidden: true,
+    name: 'DeskFlow'
+  })
+})
+
 // Abrir selector de archivos/carpetas
 ipcMain.handle('pick-files', async () => {
   if (!mainWindow) return []
@@ -124,8 +160,9 @@ ipcMain.handle('pick-files', async () => {
     const name = basename(filePath, extname(filePath)) || basename(filePath)
     let iconDataUrl = ''
     try {
-      const icon = await app.getFileIcon(filePath, { size: 'normal' })
-      iconDataUrl = icon.toDataURL()
+      const icon = await app.getFileIcon(filePath, { size: 'large' })
+      const { width } = icon.getSize()
+      if (!icon.isEmpty() && width > 0) iconDataUrl = icon.toDataURL()
     } catch { /* sin ícono */ }
     return { path: filePath, name, iconDataUrl }
   }))
@@ -135,9 +172,10 @@ ipcMain.handle('pick-files', async () => {
 // Obtener ícono de un archivo (drag & drop desde el OS)
 ipcMain.handle('get-file-icon', async (_event, filePath: string) => {
   try {
-    const icon = await app.getFileIcon(filePath, { size: 'normal' })
+    const icon = await app.getFileIcon(filePath, { size: 'large' })
     const name = basename(filePath, extname(filePath)) || basename(filePath)
-    return { iconDataUrl: icon.toDataURL(), name }
+    const { width } = icon.getSize()
+    return { iconDataUrl: (!icon.isEmpty() && width > 0) ? icon.toDataURL() : '', name }
   } catch {
     return { iconDataUrl: '', name: basename(filePath) }
   }
@@ -152,6 +190,11 @@ ipcMain.on('open-file', (_event, filePath: string) => {
 
 app.whenReady().then(() => {
   app.setAppUserModelId('com.sistemasymas.deskflow')
+
+  // Aplicar autostart según configuración guardada
+  const saved = readStore()
+  const startWithOS = (saved.settings as { startWithOS?: boolean } | null)?.startWithOS ?? true
+  app.setLoginItemSettings({ openAtLogin: startWithOS, openAsHidden: true, name: 'DeskFlow' })
 
   createWindow()
   createTray()

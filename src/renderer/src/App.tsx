@@ -5,6 +5,26 @@ import { ConfigDrawer } from './components/ConfigDrawer'
 import { GroupModal } from './components/GroupModal'
 import type { Group, AppItem } from './types'
 
+function AppIcon({ item }: { item: AppItem }) {
+  const [failed, setFailed] = useState(false)
+  if (!item.iconDataUrl || failed) {
+    return (
+      <div className="w-11 h-11 rounded-[11px] flex items-center justify-center text-2xl shadow-md"
+        style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}>
+        {item.icon}
+      </div>
+    )
+  }
+  return (
+    <img
+      src={item.iconDataUrl}
+      alt={item.name}
+      className="w-11 h-11 rounded-[11px] object-contain"
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 export default function App() {
   const {
     groups, visibleGroups, settings, search,
@@ -322,14 +342,7 @@ function GroupExpandOverlay({
                   onClick={() => onOpenApp(app)}
                   title={app.path ? `${app.name}\n${app.path}` : app.name}
                 >
-                  {app.iconDataUrl ? (
-                    <img src={app.iconDataUrl} alt={app.name} className="w-11 h-11 rounded-[11px] object-contain" />
-                  ) : (
-                    <div
-                      className="w-11 h-11 rounded-[11px] flex items-center justify-center text-2xl shadow-md"
-                      style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}
-                    >{app.icon}</div>
-                  )}
+                  <AppIcon item={app} />
                   <span
                     className="text-[10px] text-white/50 group-hover/app:text-white/80 transition-colors w-full text-center leading-tight"
                     style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
