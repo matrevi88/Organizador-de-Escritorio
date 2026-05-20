@@ -177,19 +177,31 @@ async function resolvePaths(filePaths: string[]) {
   }))
 }
 
-// Selector de APPS (.exe / .lnk / .app) — sin openDirectory para que el filtro funcione
+// Selector de APPS (.exe / .lnk en Windows; .app en macOS)
+// En macOS los .app son bundles (directorios), por eso se agrega openDirectory
 ipcMain.handle('pick-apps', async () => {
   if (!mainWindow) return []
   const isWin = process.platform === 'win32'
   const isMac = process.platform === 'darwin'
+
+  const properties: Electron.OpenDialogOptions['properties'] = isMac
+    ? ['openFile', 'openDirectory', 'multiSelections']
+    : ['openFile', 'multiSelections']
+
+  const filters: Electron.FileFilter[] = isWin
+    ? [
+        { name: 'Aplicaciones Windows', extensions: ['exe', 'lnk', 'bat', 'cmd', 'url', 'msi'] },
+        { name: 'Todos los archivos', extensions: ['*'] }
+      ]
+    : [
+        { name: 'Todos los archivos', extensions: ['*'] }
+      ]
+
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Agregar aplicación',
     defaultPath: appsDefaultPath(),
-    properties: ['openFile', 'multiSelections'],
-    filters: [
-      { name: 'Aplicaciones', extensions: isWin ? ['exe', 'lnk', 'bat', 'cmd', 'url', 'msi'] : isMac ? ['app'] : ['*'] },
-      { name: 'Todos los archivos', extensions: ['*'] }
-    ],
+    properties,
+    filters,
     buttonLabel: 'Agregar'
   })
   if (result.canceled) return []

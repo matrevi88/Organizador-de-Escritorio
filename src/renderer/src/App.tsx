@@ -279,6 +279,7 @@ export default function App() {
             group={g}
             onClose={() => setExpandedGroupId(null)}
             onOpenApp={handleOpenApp}
+            onAddApps={handleAddApps}
             onAddFiles={handleAddFiles}
             onRemoveApp={removeAppFromGroup}
           />
@@ -298,11 +299,12 @@ export default function App() {
 }
 
 function GroupExpandOverlay({
-  group, onClose, onOpenApp, onAddFiles, onRemoveApp
+  group, onClose, onOpenApp, onAddApps, onAddFiles, onRemoveApp
 }: {
   group: Group
   onClose: () => void
   onOpenApp: (app: AppItem) => void
+  onAddApps: (groupId: string) => void
   onAddFiles: (groupId: string) => void
   onRemoveApp: (groupId: string, appId: string) => void
 }) {
@@ -330,9 +332,14 @@ function GroupExpandOverlay({
         </div>
         <div className="flex items-center gap-1.5">
           <button
+            className="w-[26px] h-[26px] rounded-[8px] flex items-center justify-center text-[13px] text-white/40 bg-white/5 border border-white/10 hover:bg-[rgba(124,106,247,0.15)] hover:text-[#7c6af7] transition-all"
+            onClick={() => onAddApps(group.id)}
+            title="Agregar app ejecutable (.exe / .app)"
+          >🖥</button>
+          <button
             className="w-[26px] h-[26px] rounded-[8px] flex items-center justify-center text-[12px] font-bold text-white/40 bg-white/5 border border-white/10 hover:bg-[rgba(124,106,247,0.15)] hover:text-[#7c6af7] transition-all"
             onClick={() => onAddFiles(group.id)}
-            title="Agregar"
+            title="Agregar archivo o carpeta"
           >+</button>
           <button
             className="w-[26px] h-[26px] rounded-[8px] flex items-center justify-center text-[13px] text-white/40 bg-white/5 border border-white/10 hover:bg-white/10 hover:text-white transition-all"
@@ -345,13 +352,25 @@ function GroupExpandOverlay({
       {/* Grid de apps */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {group.apps.length === 0 ? (
-          <button
-            className="w-full flex flex-col items-center gap-2 py-8 text-white/25 text-[12px] hover:text-white/40 transition-colors"
-            onClick={() => onAddFiles(group.id)}
-          >
-            <span className="text-2xl">+</span>
-            Arrastra archivos aquí o toca +
-          </button>
+          <div className="flex flex-col items-center gap-3 py-8">
+            <div className="flex gap-3">
+              <button
+                className="flex flex-col items-center gap-1.5 px-5 py-3 rounded-[12px] text-white/30 text-[11px] border border-dashed border-white/15 hover:text-[#7c6af7] hover:border-[#7c6af7] hover:bg-[rgba(124,106,247,0.05)] transition-all"
+                onClick={() => onAddApps(group.id)}
+              >
+                <span className="text-xl">🖥</span>
+                App ejecutable
+              </button>
+              <button
+                className="flex flex-col items-center gap-1.5 px-5 py-3 rounded-[12px] text-white/30 text-[11px] border border-dashed border-white/15 hover:text-[#7c6af7] hover:border-[#7c6af7] hover:bg-[rgba(124,106,247,0.05)] transition-all"
+                onClick={() => onAddFiles(group.id)}
+              >
+                <span className="text-xl">📄</span>
+                Archivo / Carpeta
+              </button>
+            </div>
+            <span className="text-[10px] text-white/20">o arrastra desde el Finder</span>
+          </div>
         ) : (
           <div className="grid grid-cols-4 gap-2">
             {group.apps.map(app => (
