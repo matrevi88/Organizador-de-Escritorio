@@ -107,12 +107,11 @@ export default function App() {
     <div
       className="fixed inset-0 flex flex-col rounded-[20px] overflow-hidden"
       style={{
-        background: 'rgba(20,18,40,0.75)',
-        backdropFilter: 'blur(28px)',
-        WebkitBackdropFilter: 'blur(28px)',
+        background: `rgba(20,18,40,${settings.opacity / 100})`,
+        backdropFilter: settings.opacity < 100 ? 'blur(28px)' : 'none',
+        WebkitBackdropFilter: settings.opacity < 100 ? 'blur(28px)' : 'none',
         border: '1px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 8px 48px rgba(0,0,0,0.5)',
-        opacity: settings.opacity / 100
+        boxShadow: '0 8px 48px rgba(0,0,0,0.5)'
       }}
     >
       {/* Toast */}

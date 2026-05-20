@@ -62,14 +62,41 @@ const DEFAULT_SETTINGS: Settings = {
   startWithOS: true,
   collapseOnStart: true,
   syncEnabled: true,
-  opacity: 75,
+  opacity: 100,
   panelPosition: 'right',
   activeProfileId: 'personal'
 }
 
+const SETTINGS_KEY = 'deskflow_settings_v2'
+const GROUPS_KEY   = 'deskflow_groups_v2'
+
+function loadSettings(): Settings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY)
+    if (!raw) return DEFAULT_SETTINGS
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) }
+  } catch { return DEFAULT_SETTINGS }
+}
+
+function loadGroups(): Group[] {
+  try {
+    const raw = localStorage.getItem(GROUPS_KEY)
+    if (!raw) return DEFAULT_GROUPS
+    return JSON.parse(raw)
+  } catch { return DEFAULT_GROUPS }
+}
+
+function saveSettings(s: Settings) {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) } catch {}
+}
+
+function saveGroups(g: Group[]) {
+  try { localStorage.setItem(GROUPS_KEY, JSON.stringify(g)) } catch {}
+}
+
 export function useStore() {
-  const [groups, setGroups] = useState<Group[]>(DEFAULT_GROUPS)
-  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS)
+  const [groups, setGroups] = useState<Group[]>(loadGroups)
+  const [settings, setSettings] = useState<Settings>(loadSettings)
   const [search, setSearch] = useState('')
 
   const visibleGroups = search
@@ -79,42 +106,50 @@ export function useStore() {
       })).filter(g => g.apps.length > 0)
     : groups
 
-  const toggleCollapse = useCallback((id: string) => {
-    setGroups(prev => prev.map(g => g.id === id ? { ...g, collapsed: !g.collapsed } : g))
+  const setGroupsPersist = useCallback((updater: (prev: Group[]) => Group[]) => {
+    setGroups(prev => {
+      const next = updater(prev)
+      saveGroups(next)
+      return next
+    })
   }, [])
+
+  const toggleCollapse = useCallback((id: string) => {
+    setGroupsPersist(prev => prev.map(g => g.id === id ? { ...g, collapsed: !g.collapsed } : g))
+  }, [setGroupsPersist])
 
   const toggleVisible = useCallback((id: string) => {
-    setGroups(prev => prev.map(g => g.id === id ? { ...g, visible: !g.visible } : g))
-  }, [])
+    setGroupsPersist(prev => prev.map(g => g.id === id ? { ...g, visible: !g.visible } : g))
+  }, [setGroupsPersist])
 
   const addGroup = useCallback((group: Omit<Group, 'apps' | 'collapsed'>) => {
-    setGroups(prev => [...prev, { ...group, apps: [], collapsed: false }])
-  }, [])
+    setGroupsPersist(prev => [...prev, { ...group, apps: [], collapsed: false }])
+  }, [setGroupsPersist])
 
   const updateGroup = useCallback((id: string, patch: Partial<Pick<Group, 'name' | 'icon' | 'color'>>) => {
-    setGroups(prev => prev.map(g => g.id === id ? { ...g, ...patch } : g))
-  }, [])
+    setGroupsPersist(prev => prev.map(g => g.id === id ? { ...g, ...patch } : g))
+  }, [setGroupsPersist])
 
   const deleteGroup = useCallback((id: string) => {
-    setGroups(prev => prev.filter(g => g.id !== id))
-  }, [])
+    setGroupsPersist(prev => prev.filter(g => g.id !== id))
+  }, [setGroupsPersist])
 
   const addAppToGroup = useCallback((groupId: string, app: Omit<AppItem, 'id'>) => {
-    setGroups(prev => prev.map(g =>
+    setGroupsPersist(prev => prev.map(g =>
       g.id === groupId
         ? { ...g, apps: [...g.apps, { ...app, id: `app_${Date.now()}_${Math.random().toString(36).slice(2)}` }] }
         : g
     ))
-  }, [])
+  }, [setGroupsPersist])
 
   const removeAppFromGroup = useCallback((groupId: string, appId: string) => {
-    setGroups(prev => prev.map(g =>
+    setGroupsPersist(prev => prev.map(g =>
       g.id === groupId ? { ...g, apps: g.apps.filter(a => a.id !== appId) } : g
     ))
-  }, [])
+  }, [setGroupsPersist])
 
   const reorderGroups = useCallback((fromId: string, toId: string) => {
-    setGroups(prev => {
+    setGroupsPersist(prev => {
       const next = [...prev]
       const fromIdx = next.findIndex(g => g.id === fromId)
       const toIdx = next.findIndex(g => g.id === toId)
@@ -123,10 +158,14 @@ export function useStore() {
       next.splice(toIdx, 0, item)
       return next
     })
-  }, [])
+  }, [setGroupsPersist])
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
-    setSettings(prev => ({ ...prev, ...patch }))
+    setSettings(prev => {
+      const next = { ...prev, ...patch }
+      saveSettings(next)
+      return next
+    })
     if (patch.panelPosition) {
       const pos = patch.panelPosition as PanelPosition
       if (window.api?.setPanelPosition) {
