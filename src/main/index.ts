@@ -28,6 +28,11 @@ function createWindow(): void {
 
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false })
   mainWindow.on('ready-to-show', () => mainWindow?.show())
+
+  // Bajar al fondo cuando otra app toma el foco; volver al frente al recuperarlo
+  mainWindow.on('blur',  () => mainWindow?.setAlwaysOnTop(false))
+  mainWindow.on('focus', () => mainWindow?.setAlwaysOnTop(true))
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
