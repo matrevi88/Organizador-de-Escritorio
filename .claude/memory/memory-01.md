@@ -118,6 +118,40 @@ Cuarentena removida con `xattr -rd com.apple.quarantine`
 
 ---
 
+## Pendientes — SaaS con pago y licencias
+
+### Fase 1 — Página de descarga y compra (sistemasymas-web)
+- [ ] Instalar Stripe en `sistemasymas-web` (`npm i stripe @stripe/stripe-js`)
+- [ ] Crear tablas MySQL en VPS-1:
+  - `deskflow_licenses` (id, license_key, email, machine_id, stripe_payment_intent, activated_at, created_at)
+- [ ] Agregar variables de entorno en Plesk: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_DESKFLOW`
+- [ ] Crear página `/deskflow` en sistemasymas-web:
+  - Landing con descripción, precio $5, botón "Comprar ahora"
+  - Detección automática de OS del visitante → ofrece el .dmg/.exe correcto
+  - Sección con las 3 descargas disponibles
+- [ ] API `POST /api/deskflow/checkout` → crea sesión Stripe Checkout ($5 pago único)
+- [ ] API `POST /api/deskflow/webhook` → recibe confirmación de pago:
+  - Genera license key formato `DSKF-XXXX-XXXX-XXXX`
+  - Guarda en BD
+  - Envía email con key + links de descarga (Resend ya configurado)
+- [ ] Página `/deskflow/gracias` → confirmación post-pago con key y links
+
+### Fase 2 — Licencia en la app DeskFlow (Electron)
+- [ ] Pantalla de activación al primer arranque (si no hay licencia guardada)
+- [ ] Campo para ingresar license key
+- [ ] Llamada a API `POST /api/deskflow/activate` con `{ key, machineId }`
+  - Server valida key, registra machine_id, retorna token firmado
+  - Si key ya tiene otro machine_id → error "licencia activa en otro dispositivo"
+- [ ] Guardar token en store local → no pide key en arranques siguientes
+- [ ] API `GET /api/deskflow/verify` → verificación periódica (opcional, solo online)
+
+### Fase 3 — Tiendas (futuro lejano)
+- [ ] Mac App Store — requiere Apple Developer Program ($99/año)
+- [ ] Microsoft Store — requiere cuenta Dev Microsoft ($19 único), cambiar target a `appx`
+- [ ] Google Play / iOS App Store — app móvil separada con Capacitor
+
+---
+
 ## Roadmap de distribución (futuro)
 
 | Tienda | Estado | Qué se necesita |
