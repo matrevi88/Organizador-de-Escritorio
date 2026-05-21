@@ -31,6 +31,47 @@ export function ConfigDrawer({
   onUpdateSettings, onSave
 }: Props) {
   const [dragId, setDragId] = useState<string | null>(null)
+  const [backupMsg, setBackupMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExport() {
+    setExporting(true)
+    setBackupMsg(null)
+    try {
+      const result = await window.api.exportBackup()
+      if (result.canceled) {
+        setBackupMsg(null)
+      } else if (result.success) {
+        setBackupMsg({ type: 'ok', text: 'Datos exportados correctamente.' })
+      } else {
+        setBackupMsg({ type: 'err', text: result.error ?? 'Error al exportar.' })
+      }
+    } catch {
+      setBackupMsg({ type: 'err', text: 'Error inesperado al exportar.' })
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleImport() {
+    const confirmed = window.confirm(
+      '¿Importar datos?\n\nTus grupos y configuración actuales serán reemplazados por los del archivo seleccionado. Esta acción no se puede deshacer.'
+    )
+    if (!confirmed) return
+    setImporting(true)
+    setBackupMsg(null)
+    try {
+      const result = await window.api.importBackup()
+      if (!result.canceled && !result.success) {
+        setBackupMsg({ type: 'err', text: result.error ?? 'Error al importar.' })
+      }
+    } catch {
+      setBackupMsg({ type: 'err', text: 'Error inesperado al importar.' })
+    } finally {
+      setImporting(false)
+    }
+  }
 
   return (
     <div
@@ -167,6 +208,58 @@ export function ConfigDrawer({
             />
             <span className="text-[12px] text-white/40 min-w-[32px] text-right">{settings.opacity}%</span>
           </div>
+        </div>
+
+        {/* Datos */}
+        <SectionTitle>Datos y respaldo</SectionTitle>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full py-2.5 rounded-[10px] border border-white/10 text-sm text-white/70
+                       hover:bg-white/5 hover:border-white/25 transition-all text-left px-3
+                       flex items-center gap-2 disabled:opacity-40"
+            style={{ background: 'rgba(255,255,255,0.04)' }}
+          >
+            <span className="text-base">📤</span>
+            <div>
+              <div className="text-[13px] font-medium">
+                {exporting ? 'Exportando...' : 'Exportar mis datos'}
+              </div>
+              <div className="text-[10px] text-white/35 mt-0.5">
+                Guarda grupos y config en un archivo .deskflow
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={handleImport}
+            disabled={importing}
+            className="w-full py-2.5 rounded-[10px] border border-white/10 text-sm text-white/70
+                       hover:bg-white/5 hover:border-white/25 transition-all text-left px-3
+                       flex items-center gap-2 disabled:opacity-40"
+            style={{ background: 'rgba(255,255,255,0.04)' }}
+          >
+            <span className="text-base">📥</span>
+            <div>
+              <div className="text-[13px] font-medium">
+                {importing ? 'Importando...' : 'Importar datos'}
+              </div>
+              <div className="text-[10px] text-white/35 mt-0.5">
+                Restaura desde un archivo .deskflow exportado
+              </div>
+            </div>
+          </button>
+
+          {backupMsg && (
+            <div className={`text-[11px] px-3 py-2 rounded-[8px] ${
+              backupMsg.type === 'ok'
+                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                : 'bg-red-500/10 text-red-400 border border-red-500/20'
+            }`}>
+              {backupMsg.type === 'ok' ? '✓ ' : '✕ '}{backupMsg.text}
+            </div>
+          )}
         </div>
 
       </div>

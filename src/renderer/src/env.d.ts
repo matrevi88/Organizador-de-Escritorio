@@ -12,6 +12,13 @@ interface PickedFile {
   icon: string
 }
 
+interface BackupResult {
+  success: boolean
+  canceled?: boolean
+  filePath?: string
+  error?: string
+}
+
 interface Window {
   api: {
     hideWindow:       () => void
@@ -24,5 +31,7 @@ interface Window {
     loadStore:        (key: string) => unknown
     saveStore:        (key: string, value: unknown) => void
     setStartWithOS:   (enable: boolean) => void
+    exportBackup:     () => Promise<BackupResult>
+    importBackup:     () => Promise<BackupResult>
   }
 }

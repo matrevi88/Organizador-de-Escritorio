@@ -11,4 +11,6 @@ contextBridge.exposeInMainWorld('api', {
   loadStore:        (key: string)  => ipcRenderer.sendSync('load-store-sync', key),
   saveStore:        (key: string, value: unknown) => ipcRenderer.send('save-store', key, value),
   setStartWithOS:   (enable: boolean) => ipcRenderer.send('set-start-with-os', enable),
+  exportBackup:     ()                => ipcRenderer.invoke('export-backup'),
+  importBackup:     ()                => ipcRenderer.invoke('import-backup'),
 })

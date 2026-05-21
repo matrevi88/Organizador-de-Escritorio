@@ -1,6 +1,6 @@
 import { app, shell, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, dialog } from 'electron'
 import { join, basename, extname } from 'path'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, copyFileSync } from 'fs'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -104,6 +104,33 @@ function readStore(): Record<string, unknown> {
 
 function writeStore(data: Record<string, unknown>) {
   try { writeFileSync(storePath(), JSON.stringify(data), 'utf-8') } catch {}
+}
+
+function backupDir() {
+  return join(app.getPath('userData'), 'backups')
+}
+
+function autoBackup(): void {
+  try {
+    const src = storePath()
+    if (!existsSync(src)) return
+
+    const dir = backupDir()
+    mkdirSync(dir, { recursive: true })
+
+    const today = new Date().toISOString().slice(0, 10)
+    const dest = join(dir, `deskflow-backup-${today}.json`)
+    if (existsSync(dest)) return
+
+    copyFileSync(src, dest)
+
+    const files = readdirSync(dir)
+      .filter(f => f.startsWith('deskflow-backup-') && f.endsWith('.json'))
+      .sort()
+    if (files.length > 7) {
+      files.slice(0, files.length - 7).forEach(f => unlinkSync(join(dir, f)))
+    }
+  } catch { /* nunca bloquear el arranque */ }
 }
 
 ipcMain.on('load-store-sync', (event, key: string) => {
@@ -243,10 +270,76 @@ ipcMain.on('open-file', (_event, filePath: string) => {
   shell.openPath(filePath)
 })
 
+// Exportar datos a archivo .deskflow
+ipcMain.handle('export-backup', async () => {
+  if (!mainWindow) return { success: false, error: 'No window' }
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Exportar datos de DeskFlow',
+    defaultPath: join(app.getPath('documents'), `deskflow-export-${new Date().toISOString().slice(0, 10)}.deskflow`),
+    filters: [
+      { name: 'DeskFlow Export', extensions: ['deskflow'] },
+      { name: 'JSON', extensions: ['json'] }
+    ],
+    buttonLabel: 'Exportar'
+  })
+  if (result.canceled || !result.filePath) return { success: false, canceled: true }
+  try {
+    const store = readStore()
+    const payload = {
+      version: 1,
+      exportDate: new Date().toISOString(),
+      app: 'DeskFlow',
+      data: { settings: store.settings ?? null, groups: store.groups ?? null }
+    }
+    writeFileSync(result.filePath, JSON.stringify(payload, null, 2), 'utf-8')
+    return { success: true, filePath: result.filePath }
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
+// Importar datos desde archivo .deskflow
+ipcMain.handle('import-backup', async () => {
+  if (!mainWindow) return { success: false, error: 'No window' }
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Importar datos de DeskFlow',
+    defaultPath: app.getPath('documents'),
+    filters: [
+      { name: 'DeskFlow Export', extensions: ['deskflow'] },
+      { name: 'JSON', extensions: ['json'] }
+    ],
+    properties: ['openFile'],
+    buttonLabel: 'Importar'
+  })
+  if (result.canceled || result.filePaths.length === 0) return { success: false, canceled: true }
+  try {
+    const raw = readFileSync(result.filePaths[0], 'utf-8')
+    const parsed = JSON.parse(raw)
+    if (
+      typeof parsed !== 'object' || parsed === null ||
+      parsed.app !== 'DeskFlow' ||
+      typeof parsed.version !== 'number' ||
+      !parsed.data
+    ) {
+      return { success: false, error: 'Archivo inválido o no es un export de DeskFlow.' }
+    }
+    const current = readStore()
+    if (parsed.data.settings) current.settings = parsed.data.settings
+    if (parsed.data.groups)   current.groups   = parsed.data.groups
+    writeStore(current)
+    mainWindow.webContents.reload()
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: `Error al leer el archivo: ${String(err)}` }
+  }
+})
+
 // ────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
   app.setAppUserModelId('com.sistemasymas.deskflow')
+
+  autoBackup()
 
   // Aplicar autostart según configuración guardada
   const saved = readStore()
