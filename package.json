@@ -39,12 +39,34 @@
     "appId": "com.sistemasymas.deskflow",
     "productName": "DeskFlow",
     "directories": { "output": "dist" },
+    "compression": "maximum",
+    "files": [
+      "out/**/*",
+      "!out/**/*.map",
+      "!**/node_modules/*/{CHANGELOG.md,README.md,readme.md,readme}",
+      "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+      "!**/node_modules/*.d.ts",
+      "!**/node_modules/.bin"
+    ],
     "win": {
-      "target": "nsis",
+      "target": {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      "icon": "resources/icon.ico",
       "signingHashAlgorithms": []
     },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    },
     "mac": {
-      "target": "dmg",
+      "target": {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      },
+      "icon": "resources/icon.icns",
       "category": "public.app-category.utilities",
       "identity": null
     },
