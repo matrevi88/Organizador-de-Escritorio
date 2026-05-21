@@ -169,13 +169,10 @@ ipcMain.on('set-panel-position', (_event, pos: 'left' | 'right' | 'float') => {
   mainWindow.setAlwaysOnTop(true)
 })
 
-// Autostart con Windows
+// Autostart con Windows/Mac (solo en app instalada)
 ipcMain.on('set-start-with-os', (_event, enable: boolean) => {
-  app.setLoginItemSettings({
-    openAtLogin: enable,
-    openAsHidden: true,
-    name: 'DeskFlow'
-  })
+  if (!app.isPackaged) return
+  app.setLoginItemSettings({ openAtLogin: enable, openAsHidden: true, name: 'DeskFlow' })
 })
 
 // Emoji fallback según tipo de archivo
@@ -341,10 +338,12 @@ app.whenReady().then(() => {
 
   autoBackup()
 
-  // Aplicar autostart según configuración guardada
-  const saved = readStore()
-  const startWithOS = (saved.settings as { startWithOS?: boolean } | null)?.startWithOS ?? true
-  app.setLoginItemSettings({ openAtLogin: startWithOS, openAsHidden: true, name: 'DeskFlow' })
+  // Autostart solo aplica en la app instalada, nunca en desarrollo
+  if (app.isPackaged) {
+    const saved = readStore()
+    const startWithOS = (saved.settings as { startWithOS?: boolean } | null)?.startWithOS ?? true
+    app.setLoginItemSettings({ openAtLogin: startWithOS, openAsHidden: true, name: 'DeskFlow' })
+  }
 
   createWindow()
   createTray()
