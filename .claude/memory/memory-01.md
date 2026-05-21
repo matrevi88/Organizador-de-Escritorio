@@ -182,11 +182,13 @@ Cuarentena removida con `xattr -rd com.apple.quarantine`
 - Para generar builds nuevos: `npm run dist:mac` (Mac) y `npm run dist:win` (Windows), luego SCP al VPS.
 
 ## Ejecutables actuales (v0.1.0)
-| Archivo | OS | Peso |
-|---|---|---|
-| `DeskFlow Setup 0.1.0.exe` | Windows x64 | 75 MB |
-| `DeskFlow-0.1.0-arm64.dmg` | Mac Apple Silicon (M1/M2/M3/M4) | 83 MB |
-| `DeskFlow-0.1.0.dmg` | Mac Intel | 88 MB |
+| Archivo | OS | Peso | URL de descarga |
+|---|---|---|---|
+| `DeskFlow-Setup-0.1.0-windows.exe` | Windows x64 | 75 MB | `https://sistemasymas.com/downloads/deskflow/DeskFlow-Setup-0.1.0-windows.exe` |
+| `DeskFlow-0.1.0-mac-arm64.dmg` | Mac Apple Silicon (M1/M2/M3/M4) | 83 MB | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-arm64.dmg` |
+| `DeskFlow-0.1.0-mac-intel.dmg` | Mac Intel | 88 MB | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-intel.dmg` |
+
+**Ruta en VPS-1:** `/var/www/vhosts/sistemasymas.com/httpdocs/downloads/deskflow/`
 
 ## Notas de operación
 
