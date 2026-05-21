@@ -141,6 +141,19 @@ Cuarentena removida con `xattr -rd com.apple.quarantine`
 
 ---
 
+## Regla de distribución — ejecutables NUNCA van al git (2026-05-21)
+- Los archivos `.exe`, `.dmg` pesan 75–88 MB — superan el límite recomendado de GitHub (50 MB).
+- **Nunca** hacer commit/push de los ejecutables. El `.gitignore` ya los excluye (`dist/`, `releases/`).
+- Los ejecutables se suben **directo al VPS-1** (`sistemasymas.com/downloads/deskflow/`) y se sirven desde ahí.
+- Para generar builds nuevos: `npm run dist:mac` (Mac) y `npm run dist:win` (Windows), luego SCP al VPS.
+
+## Ejecutables actuales (v0.1.0)
+| Archivo | OS | Peso |
+|---|---|---|
+| `DeskFlow Setup 0.1.0.exe` | Windows x64 | 75 MB |
+| `DeskFlow-0.1.0-arm64.dmg` | Mac Apple Silicon (M1/M2/M3/M4) | 83 MB |
+| `DeskFlow-0.1.0.dmg` | Mac Intel | 88 MB |
+
 ## Notas de operación
 
 - **Icono de app:** actualmente usa el ícono default de Electron (advertencia en build). Para cambiarlo: agregar `"icon": "resources/icon.icns"` en config mac y `"icon": "resources/icon.ico"` en config win, con los archivos correspondientes.
