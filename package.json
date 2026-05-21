@@ -40,7 +40,8 @@
     "productName": "DeskFlow",
     "directories": { "output": "dist" },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signingHashAlgorithms": []
     },
     "mac": {
       "target": "dmg",
