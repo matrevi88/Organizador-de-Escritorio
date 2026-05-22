@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, dialog } from 'electron'
 import { join, basename, extname } from 'path'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, copyFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, copyFileSync, lstatSync, realpathSync } from 'fs'
+import { execFileNoThrow } from '../utils/execFileNoThrow'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -183,6 +184,33 @@ function fallbackIcon(filePath: string): string {
   return '📄'
 }
 
+// Resuelve symlinks, aliases de Finder (Mac) y accesos directos .lnk (Windows) a su ruta real.
+// Retorna el path original si no se puede resolver.
+async function resolveRealPath(filePath: string): Promise<string> {
+  // 1. Symlink estándar (Mac / Linux / Windows con mklink)
+  try {
+    if (lstatSync(filePath).isSymbolicLink()) {
+      return realpathSync(filePath)
+    }
+  } catch { /* no es symlink o no existe */ }
+
+  // 2. Acceso directo .lnk de Windows
+  if (process.platform === 'win32' && filePath.toLowerCase().endsWith('.lnk')) {
+    const psCmd = `(New-Object -COM WScript.Shell).CreateShortcut([System.IO.Path]::GetFullPath('${filePath.replace(/'/g, "''")}')).TargetPath`
+    const { stdout } = await execFileNoThrow('powershell', ['-NoProfile', '-NonInteractive', '-Command', psCmd])
+    if (stdout) return stdout
+  }
+
+  // 3. Alias de Finder (Mac) — distinto de symlink; requiere AppleScript
+  if (process.platform === 'darwin') {
+    const script = `tell application "Finder" to get POSIX path of (original item of (POSIX file "${filePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}") as alias)`
+    const { stdout } = await execFileNoThrow('osascript', ['-e', script])
+    if (stdout) return stdout
+  }
+
+  return filePath
+}
+
 // Default path: Program Files en Windows (donde están los .exe reales), Applications en Mac
 function appsDefaultPath(): string {
   if (process.platform === 'win32') {
@@ -193,16 +221,18 @@ function appsDefaultPath(): string {
 }
 
 // Procesar rutas seleccionadas → { path, name, iconDataUrl, icon }
+// Resuelve automáticamente symlinks, aliases de Finder y .lnk de Windows.
 async function resolvePaths(filePaths: string[]) {
   return Promise.all(filePaths.map(async (filePath) => {
+    const realPath = await resolveRealPath(filePath)
     const name = basename(filePath, extname(filePath)) || basename(filePath)
     let iconDataUrl = ''
     try {
-      const icon = await app.getFileIcon(filePath, { size: 'large' })
+      const icon = await app.getFileIcon(realPath, { size: 'large' })
       const { width } = icon.getSize()
       if (!icon.isEmpty() && width > 0) iconDataUrl = icon.toDataURL()
     } catch { /* sin ícono */ }
-    return { path: filePath, name, iconDataUrl, icon: fallbackIcon(filePath) }
+    return { path: realPath, name, iconDataUrl, icon: fallbackIcon(realPath) }
   }))
 }
 
