@@ -11,7 +11,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "dist:win": "npm run build && electron-builder --win",
-    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:mac": "npm run build && electron-builder --mac --config electron-builder.config.cjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,6 +20,7 @@
   "devDependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@electron/osx-sign": "^2.4.0",
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -38,7 +39,9 @@
   "build": {
     "appId": "com.sistemasymas.deskflow",
     "productName": "DeskFlow",
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "compression": "maximum",
     "files": [
       "out/**/*",
@@ -51,7 +54,9 @@
     "win": {
       "target": {
         "target": "nsis",
-        "arch": ["x64"]
+        "arch": [
+          "x64"
+        ]
       },
       "icon": "resources/icon.ico",
       "signingHashAlgorithms": []
@@ -64,7 +69,10 @@
     "mac": {
       "target": {
         "target": "dmg",
-        "arch": ["x64", "arm64"]
+        "arch": [
+          "x64",
+          "arm64"
+        ]
       },
       "icon": "resources/icon.icns",
       "category": "public.app-category.utilities",

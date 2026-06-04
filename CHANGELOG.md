@@ -39,6 +39,11 @@ Release de distribución con UX rediseñada (sesión 2026-06-03/04). Código en 
 - Stats falsos y botón de sync del header (sync sigue en Ajustes sin backend).
 - Tema oscuro morado/indigo como predeterminado en renderer.
 
+### Corregido (2026-06-04, tarde)
+
+- **macOS «está dañado»:** firma linker inválida en builds sin Developer ID; `afterPack` firma ad hoc todos los Mach-O (`scripts/sign-darwin-app.cjs` + `electron-builder.config.cjs`). DMG arm64/Intel resubidos al VPS.
+- Instrucciones en web `/deskflow` para clic derecho → Abrir y `xattr -cr`.
+
 ### Distribución (2026-06-04)
 
 Instaladores subidos a VPS-1 (estáticos, no requieren deploy Next.js):

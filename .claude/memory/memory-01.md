@@ -185,7 +185,9 @@ Subir builds al VPS vía SCP; `.gitignore` excluye `dist/`.
 | `DeskFlow-0.1.0-mac-arm64.dmg` | Apple Silicon | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-arm64.dmg` |
 | `DeskFlow-0.1.0-mac-intel.dmg` | Intel | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-intel.dmg` |
 
-**Último build subido al VPS:** 2026-06-04 (commit `453a2f8` — Launcher, tema bone/azul, carpetas vigiladas).
+**Último build subido al VPS:** 2026-06-04 — Mac **re-firmados** (fix «dañado»); Windows sin cambio ese día.
+
+**macOS sin Apple Developer ID:** Gatekeeper puede mostrar «dañado» o bloquear. Solución usuario: clic derecho → Abrir, o `xattr -cr /Applications/DeskFlow.app`. Build: firma ad hoc en `afterPack` (`electron-builder.config.cjs`).
 
 **Procedimiento de subida** (también en `CHANGELOG.md`):
 
