@@ -5,6 +5,14 @@ const path = require('path')
 
 module.exports = {
   ...pkg.build,
+  win: {
+    ...pkg.build.win,
+    artifactName: 'DeskFlow-Setup-${version}-windows.${ext}'
+  },
+  mac: {
+    ...pkg.build.mac,
+    identity: null
+  },
   async afterPack(context) {
     if (context.electronPlatformName !== 'darwin') return
     const appPath = path.join(

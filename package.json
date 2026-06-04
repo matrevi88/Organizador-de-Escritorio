@@ -10,7 +10,8 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "dist:win": "npm run build && electron-builder --win",
+    "dist:win": "npm run build && electron-builder --win --config electron-builder.config.cjs",
+    "release:win": "npm run dist:win && bash scripts/verify-windows-release.sh",
     "dist:mac": "npm run build && electron-builder --mac --config electron-builder.config.cjs",
     "typecheck": "tsc --noEmit"
   },
@@ -62,8 +63,17 @@
       "signingHashAlgorithms": []
     },
     "nsis": {
-      "oneClick": true,
+      "include": "build/installer.nsh",
+      "oneClick": false,
       "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
+      "installerIcon": "resources/icon.ico",
+      "uninstallerIcon": "resources/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeskFlow",
+      "runAfterFinish": false,
       "deleteAppDataOnUninstall": false
     },
     "mac": {

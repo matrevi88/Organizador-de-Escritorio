@@ -8,6 +8,13 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Versión sem�
 
 Release de distribución con UX rediseñada (sesión 2026-06-03/04). Código en GitHub `master` commit `453a2f8` (+ `2b88e76` accesos directos).
 
+### Corregido (instalador Windows, 2026-06-04)
+
+- NSIS **asistente** (`oneClick: false`), `allowElevation: false`, artefacto `DeskFlow-Setup-${version}-windows.exe`.
+- **`build/installer.nsh`**: cierre forzado (`taskkill`), instalación sobre versión previa, desinstalación silenciosa, `CRCCheck off`.
+- App: `requestSingleInstanceLock`, salida correcta desde bandeja (`isQuitting` / `before-quit`).
+- **`scripts/DeskFlow-Limpiar-Windows.bat`** + **`docs/RELEASE-WINDOWS.md`** + `npm run release:win` para no repetir fallos en clientes.
+
 ### Añadido
 
 - **Launcher** como pantalla principal al abrir (`Ctrl+Shift+D`): búsqueda, filtros por grupo (chips), navegación ↑↓ + Enter, contador de resultados.
@@ -54,16 +61,16 @@ Instaladores subidos a VPS-1 (estáticos, no requieren deploy Next.js):
 | macOS Apple Silicon | https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-arm64.dmg |
 | macOS Intel | https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-intel.dmg |
 
-**Subir builds nuevos:**
+**Publicar Windows (obligatorio):** ver [docs/RELEASE-WINDOWS.md](./docs/RELEASE-WINDOWS.md).
 
 ```bash
 cd proyectos/organizador-escritorio
-npm run dist:mac && npm run dist:win
-# Renombrar según lib/deskflow.ts en sistemasymas-web:
-cp "dist/DeskFlow-0.1.0-arm64.dmg" releases-upload/DeskFlow-0.1.0-mac-arm64.dmg
-cp "dist/DeskFlow-0.1.0.dmg" releases-upload/DeskFlow-0.1.0-mac-intel.dmg
-cp "dist/DeskFlow Setup 0.1.0.exe" releases-upload/DeskFlow-Setup-0.1.0-windows.exe
-scp -i ~/.ssh/id_ed25519_vps3_coolify releases-upload/* \
+npm run release:win
+npm run dist:mac   # Mac: CHANGELOG + sign-darwin-app
+scp -i ~/.ssh/id_ed25519_vps3_coolify \
+  dist/DeskFlow-Setup-*-windows.exe dist/DeskFlow-Setup-*-windows.exe.sha256 \
+  scripts/DeskFlow-Limpiar-Windows.bat \
+  dist/*.dmg \
   root@74.208.25.241:/var/www/vhosts/sistemasymas.com/httpdocs/downloads/deskflow/
 ```
 

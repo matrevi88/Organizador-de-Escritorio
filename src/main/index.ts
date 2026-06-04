@@ -10,8 +10,16 @@ import {
   fallbackIconForPath
 } from './folderIndex'
 
+/** Una sola instancia: evita dos DeskFlow.exe al instalar/actualizar */
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+  app.quit()
+}
+
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+/** Windows: cerrar bandeja al salir para que el instalador pueda reemplazar DeskFlow.exe */
+let isQuitting = false
 
 type PanelPos = 'left' | 'right' | 'float'
 
@@ -59,6 +67,15 @@ function createWindow(): void {
 
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false })
   mainWindow.on('ready-to-show', () => mainWindow?.show())
+
+  if (process.platform === 'win32') {
+    mainWindow.on('close', (e) => {
+      if (!isQuitting) {
+        e.preventDefault()
+        mainWindow?.hide()
+      }
+    })
+  }
 
   // Bajar al fondo cuando otra app toma el foco; volver al frente al recuperarlo
   mainWindow.on('blur',  () => mainWindow?.setAlwaysOnTop(false))
@@ -113,7 +130,7 @@ function createTray(): void {
     { type: 'separator' },
     { label: 'Atajo: Ctrl+Shift+D', enabled: false },
     { type: 'separator' },
-    { label: 'Salir', click: () => app.quit() }
+    { label: 'Salir', click: () => { isQuitting = true; app.quit() } }
   ])
 
   tray.setContextMenu(contextMenu)
@@ -465,33 +482,50 @@ ipcMain.handle('import-backup', async () => {
 
 // ────────────────────────────────────────────────────────────
 
-app.whenReady().then(() => {
-  app.setAppUserModelId('com.sistemasymas.deskflow')
-
-  autoBackup()
-
-  loadIndexFromDisk()
-  const watched = watchedFoldersFromStore()
-  if (watched.length > 0) {
-    setImmediate(() => scanWatchedFolders(watched))
+app.on('before-quit', () => {
+  isQuitting = true
+  if (tray) {
+    tray.destroy()
+    tray = null
   }
-
-  // Autostart solo aplica en la app instalada, nunca en desarrollo
-  if (app.isPackaged) {
-    const saved = readStore()
-    const startWithOS = (saved.settings as { startWithOS?: boolean } | null)?.startWithOS ?? true
-    app.setLoginItemSettings({ openAtLogin: startWithOS, openAsHidden: true, name: 'DeskFlow' })
-  }
-
-  createWindow()
-  createTray()
-
-  globalShortcut.register('CommandOrControl+Shift+D', toggleWindow)
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
 })
+
+app.on('second-instance', () => {
+  if (mainWindow) {
+    mainWindow.show()
+    mainWindow.focus()
+  }
+})
+
+if (gotSingleInstanceLock) {
+  app.whenReady().then(() => {
+    app.setAppUserModelId('com.sistemasymas.deskflow')
+
+    autoBackup()
+
+    loadIndexFromDisk()
+    const watched = watchedFoldersFromStore()
+    if (watched.length > 0) {
+      setImmediate(() => scanWatchedFolders(watched))
+    }
+
+    // Autostart solo aplica en la app instalada, nunca en desarrollo
+    if (app.isPackaged) {
+      const saved = readStore()
+      const startWithOS = (saved.settings as { startWithOS?: boolean } | null)?.startWithOS ?? true
+      app.setLoginItemSettings({ openAtLogin: startWithOS, openAsHidden: true, name: 'DeskFlow' })
+    }
+
+    createWindow()
+    createTray()
+
+    globalShortcut.register('CommandOrControl+Shift+D', toggleWindow)
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    })
+  })
+}
 
 app.on('will-quit', () => globalShortcut.unregisterAll())
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })

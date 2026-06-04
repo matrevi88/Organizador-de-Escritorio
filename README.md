@@ -14,18 +14,21 @@ npm run typecheck
 
 | Archivo | Contenido |
 |---------|-----------|
-| [CHANGELOG.md](./CHANGELOG.md) | Historial de versiones y procedimiento de subida al VPS |
-| [.claude/memory/memory-01.md](./.claude/memory/memory-01.md) | Memoria técnica del proyecto (IPC, arquitectura, pendientes) |
+| [CHANGELOG.md](./CHANGELOG.md) | Historial de versiones |
+| [docs/RELEASE-WINDOWS.md](./docs/RELEASE-WINDOWS.md) | **Checklist obligatorio** antes de publicar `.exe` (instalar / actualizar / desinstalar) |
+| [.claude/memory/memory-01.md](./.claude/memory/memory-01.md) | Memoria técnica (IPC, arquitectura) |
 
 ## Distribución
 
 - Repo: `github.com/matrevi88/Organizador-de-Escritorio` — rama `master`
-- Descargas públicas: https://sistemasymas.com/deskflow
-- Instaladores estáticos: `https://sistemasymas.com/downloads/deskflow/` (no van en este git)
+- Descargas: https://sistemasymas.com/deskflow
+- Binarios en VPS: `/downloads/deskflow/` (no van en git)
 
 ```bash
+npm run release:win   # build + verificación pre-subida
 npm run dist:mac
-npm run dist:win
 ```
 
-Ver renombrado y `scp` en `CHANGELOG.md`.
+Subida al VPS, pruebas en VM Windows y alinear `DESKFLOW_VERSION` en `sistemasymas-web`: ver **[docs/RELEASE-WINDOWS.md](./docs/RELEASE-WINDOWS.md)**.
+
+Script de limpieza para clientes con instalación rota: `scripts/DeskFlow-Limpiar-Windows.bat` (también en el VPS).
