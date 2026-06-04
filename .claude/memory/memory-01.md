@@ -15,184 +15,152 @@ Organizador de escritorio tipo lanzador — agrupa apps, archivos y carpetas en 
 
 ```
 src/
-├── main/index.ts          — proceso principal: IPC, store, tray, window, autostart, backup
-├── preload/index.ts       — contextBridge (API segura al renderer)
+├── main/
+│   ├── index.ts           — IPC, store, tray, ventana, backup, carpetas vigiladas
+│   └── folderIndex.ts     — escaneo e índice de carpetas vigiladas
+├── preload/index.ts       — contextBridge
 └── renderer/src/
-    ├── App.tsx            — root component (421 líneas)
-    ├── store/useStore.ts  — estado React + persist vía IPC
-    ├── types/index.ts     — Group, AppItem, Settings, Profile
+    ├── App.tsx            — Launcher (default) + Organizar + overlays
+    ├── theme.ts           — gradiente logo + paleta GROUP_COLORS
+    ├── lib/
+    │   ├── launcherSearch.ts  — búsqueda grupos + índice
+    │   └── colorContrast.ts   — colores de grupo legibles en tema claro
+    ├── store/useStore.ts
+    ├── types/index.ts
     └── components/
-        ├── ConfigDrawer.tsx  — panel de configuración (grupos, opciones, datos)
-        ├── GroupCard.tsx     — tarjeta de grupo con drag-drop
-        └── GroupModal.tsx    — modal crear/editar grupo
+        ├── LauncherView.tsx
+        ├── OrganizeView.tsx   — rejilla 2×2 + búsqueda grupos/índice
+        ├── ConfigDrawer.tsx
+        ├── WatchedFoldersSection.tsx
+        ├── GroupCard.tsx
+        ├── GroupModal.tsx
+        └── AppIcon.tsx
 ```
+
+### UI Launcher (Fase A — 2026-06-03)
+- Al abrir (`Ctrl+Shift+D`): **Launcher** compacto **340×~480px**, posición izq/der/flotante (Ajustes).
+- Búsqueda: nombre, ruta, grupo; chips de filtro por grupo.
+- ↑↓ + Enter abre; Esc limpia búsqueda u oculta ventana.
+- **Organizar** (⊞): panel 340px, grupos, drag-drop, barra de búsqueda.
+- **Ajustes** (⚙): ConfigDrawer (perfiles UI, paneles, opacidad, carpetas vigiladas, backup).
+- IPC `set-launcher-layout`: tamaño launcher vs organizar.
+
+### Tema visual (2026-06-03 — aprobado por Martha)
+- **Dirección 3 + azul marca 1:** fondo claro **bone** `#FAFAF7`, texto **ink** `#0B1020`, acento **azul** `#2563EB` / deep `#1E3A8A`, coral opcional `#FB7185`.
+- Variables en `index.css`; tokens Tailwind: `bone`, `ink`, `accent`, `deep`, `df-muted`, `df-surface`, `df-hover`, `df-select`, `border-df`.
+- **Colores de grupo:** `colorContrast.ts` oscurece etiquetas claras (contraste ≥4.5:1 sobre bone); chips activos con fondo tintado y texto ink.
+- Logo y tray: degradado / icono azul marca (no morado `#7c6af7`).
+- Prototipos HTML (referencia): `prototypes/comparacion-temas.html`, `comparacion-tres-direcciones.html`.
+
+### Carpetas vigiladas — Fase B (2026-06-03)
+- **Ajustes → Carpetas vigiladas:** rutas locales o de red (unidad mapeada `Z:\...` o UNC `\\servidor\share\...`) si el SO las ve montadas y con lectura.
+- Indexación: profundidad **6**, máx. **~12k** entradas; caché en `userData/deskflow-folder-index.json`.
+- Regenerar: al agregar/quitar carpeta o botón **↻** (reconectar red/VPN y refrescar).
+- **Launcher y Organizar:** con 1+ caracteres busca en grupos **y** en el índice (badge `📂 NombreCarpeta`, azul índice / color grupo ajustado).
+- Excluye: `node_modules`, `.git`, carpetas ocultas, `dist`, `build`, etc.
+- **No** hay watcher en tiempo real ni credenciales SMB guardadas en la app.
+- IPC: `pick-watched-folder`, `set-watched-folders`, `refresh-folder-index`, `search-indexed`, `get-folder-index-meta`.
 
 ### Flujo de datos
 ```
-Acción UI → useStore → saveStore(key, value) → ipcRenderer.send → ipcMain → writeFileSync(userData/deskflow-store.json)
+Acción UI → useStore → saveStore → ipcMain → writeFileSync(userData/deskflow-store.json)
+Índice carpetas → scanWatchedFolders() → deskflow-folder-index.json
 ```
 
-### IPC disponible (preload/index.ts)
+### IPC disponible (preload)
 | método | tipo | función |
 |---|---|---|
-| `hideWindow` | send | ocultar ventana |
-| `toggleWindow` | send | mostrar/ocultar |
+| `hideWindow` / `toggleWindow` | send | visibilidad |
 | `setPanelPosition` | send | left/right/float |
-| `pickApps` | invoke | dialog seleccionar .exe/.app |
-| `pickFiles` | invoke | dialog seleccionar archivos |
-| `getFileIcon` | invoke | icono del sistema para un path |
-| `openFile` | send | abrir con programa por defecto |
-| `loadStore` | sendSync | leer clave del store |
-| `saveStore` | send | guardar clave en el store |
-| `setStartWithOS` | send | toggle autostart (solo isPackaged) |
-| `exportBackup` | invoke | dialog guardar → .deskflow |
-| `importBackup` | invoke | dialog abrir → validar → reload |
+| `setLauncherLayout` | send | launcher vs organizar |
+| `pickApps` / `pickFiles` | invoke | diálogos |
+| `pickWatchedFolder` | invoke | carpeta a indexar |
+| `setWatchedFolders` | invoke | guardar lista + reindexar |
+| `refreshFolderIndex` | invoke | reescanear |
+| `searchIndexed` | invoke | búsqueda en caché |
+| `getFolderIndexMeta` | invoke | conteo / fecha |
+| `getFileIcon` / `openFile` | invoke/send | icono y abrir path |
+| `loadStore` / `saveStore` | sendSync/send | persistencia |
+| `exportBackup` / `importBackup` | invoke | .deskflow |
+| `setStartWithOS` | send | autostart (solo isPackaged) |
 
 ---
 
 ## Persistencia
 
-**Archivo:** `userData/deskflow-store.json`  
-- Windows: `%APPDATA%\DeskFlow\deskflow-store.json`  
-- Mac: `~/Library/Application Support/DeskFlow/deskflow-store.json`
+**Store:** `userData/deskflow-store.json`
 
-**Claves guardadas:**
 ```json
 {
-  "settings": { "startWithOS", "collapseOnStart", "syncEnabled", "opacity", "panelPosition", "activeProfileId" },
-  "groups": [ { "id", "name", "icon", "color", "visible", "collapsed", "apps": [{ "id", "name", "icon", "iconDataUrl", "path" }] } ]
+  "settings": {
+    "startWithOS", "collapseOnStart", "syncEnabled", "opacity",
+    "panelPosition", "activeProfileId", "watchedFolders": []
+  },
+  "groups": [{ "id", "name", "icon", "color", "visible", "collapsed", "apps": [...] }]
 }
 ```
 
-**Backups automáticos:** `userData/backups/deskflow-backup-YYYY-MM-DD.json`  
-- Se crea al arrancar la app, máximo 1 por día, se conservan los 7 más recientes  
-- Función: `autoBackup()` en `main/index.ts`, llamada en `app.whenReady()` antes de `createWindow()`
-
-**Export/Import manual:** sección "Datos y respaldo" en ConfigDrawer  
-- `.deskflow` = JSON con `{ version, exportDate, app:"DeskFlow", data:{settings,groups} }`
-- Import: valida `parsed.app === 'DeskFlow'` + `parsed.version` numérico → `writeStore` → `webContents.reload()`
+**Índice:** `userData/deskflow-folder-index.json`  
+**Backups auto:** `userData/backups/deskflow-backup-YYYY-MM-DD.json` (7 días)  
+**Export manual:** `.deskflow` con `{ version, exportDate, app:"DeskFlow", data:{settings,groups} }`
 
 ---
 
 ## Autostart
-
-**Regla crítica:** `app.setLoginItemSettings()` solo se llama si `app.isPackaged === true`  
-**Por qué:** en dev, registraría el binario de Electron de node_modules en Login Items del OS → al reiniciar aparece un panel de error pidiendo ejecutar el servidor Vite.  
-**Afecta:** `app.whenReady()` y el handler `set-start-with-os` — ambos tienen el guard `if (!app.isPackaged) return`
-
-Default: `startWithOS: true` → se registra automáticamente en la primera ejecución del build instalado.
+Solo si `app.isPackaged === true` (evita registrar Electron de `npm run dev` en Login Items).
 
 ---
 
 ## Builds y distribución
 
-### Comandos
 ```bash
-npm run dev          # desarrollo (no toca Login Items)
-npm run build        # compila a out/ (sin instalador)
-npm run dist:mac     # DMG para Mac (arm64, sin firma)
-npm run dist:win     # EXE NSIS para Windows (sin firma)
+npm run dev          # desarrollo
+npm run typecheck    # tsc
+npm run build        # out/
+npm run dist:mac     # DMG arm64
+npm run dist:win     # EXE NSIS
 ```
 
-### GitHub Actions — `.github/workflows/build.yml`
-- Se activa en: tags `v*` o manualmente (`workflow_dispatch`)
-- `build-mac`: runner `macos-latest` → genera `dist/*.dmg`
-- `build-win`: runner `windows-latest` → genera `dist/*.exe`
-- Artifacts descargables en la UI de GitHub Actions
+Tag `v*` → GitHub Actions (`.github/workflows/build.yml`).
 
-**Para publicar nueva versión:**
-```bash
-git tag v0.2.0 && git push origin v0.2.0
-```
-
-### Configuración electron-builder (package.json)
-```json
-"mac": { "target": "dmg", "category": "public.app-category.utilities", "identity": null },
-"win": { "target": "nsis", "signingHashAlgorithms": [] }
-```
-`identity: null` y `signingHashAlgorithms: []` = sin firma de código (para distribución directa, no tiendas).
-
-### App instalada en esta Mac
-`/Applications/DeskFlow.app` — build 0.1.0 arm64  
-Cuarentena removida con `xattr -rd com.apple.quarantine`
+**Ejecutables en VPS-1:** `https://sistemasymas.com/downloads/deskflow/`  
+**Nunca** commitear `dist/` ni `.exe`/`.dmg` al git.
 
 ---
 
-## Pendientes — SaaS con pago y licencias
+## Pendientes producto (sin cambiar hasta que Martha pida)
 
-### Fase 1 — Página de descarga y compra (sistemasymas-web)
-- [ ] Instalar Stripe en `sistemasymas-web` (`npm i stripe @stripe/stripe-js`)
-- [ ] Crear tablas MySQL en VPS-1:
-  - `deskflow_licenses` (id, license_key, email, machine_id, stripe_payment_intent, activated_at, created_at)
-- [ ] Agregar variables de entorno en Plesk: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_DESKFLOW`
-- [ ] Crear página `/deskflow` en sistemasymas-web:
-  - Landing con descripción, precio $5, botón "Comprar ahora"
-  - Detección automática de OS del visitante → ofrece el .dmg/.exe correcto
-  - Sección con las 3 descargas disponibles
-- [ ] API `POST /api/deskflow/checkout` → crea sesión Stripe Checkout ($5 pago único)
-- [ ] API `POST /api/deskflow/webhook` → recibe confirmación de pago:
-  - Genera license key formato `DSKF-XXXX-XXXX-XXXX`
-  - Guarda en BD
-  - Envía email con key + links de descarga (Resend ya configurado)
-- [ ] Página `/deskflow/gracias` → confirmación post-pago con key y links
+### SaaS / licencias (sistemasymas-web + app)
+- Stripe, tablas `deskflow_licenses`, activación en Electron — ver secciones históricas abajo si se retoma.
 
-### Fase 2 — Licencia en la app DeskFlow (Electron)
-- [ ] Pantalla de activación al primer arranque (si no hay licencia guardada)
-- [ ] Campo para ingresar license key
-- [ ] Llamada a API `POST /api/deskflow/activate` con `{ key, machineId }`
-  - Server valida key, registra machine_id, retorna token firmado
-  - Si key ya tiene otro machine_id → error "licencia activa en otro dispositivo"
-- [ ] Guardar token en store local → no pide key en arranques siguientes
-- [ ] API `GET /api/deskflow/verify` → verificación periódica (opcional, solo online)
+### Web landing `/deskflow`
+- Descargas OK; opcional alinear colores landing al azul marca (hoy puede quedar morado legacy).
 
-### Fase 3 — Tiendas (futuro lejano)
-- [ ] Mac App Store — requiere Apple Developer Program ($99/año)
-- [ ] Microsoft Store — requiere cuenta Dev Microsoft ($19 único), cambiar target a `appx`
-- [ ] Google Play / iOS App Store — app móvil separada con Capacitor
+### Código con esqueleto sin usar
+- Profiles (`activeProfileId` sin reducer completo)
+- `syncEnabled` sin backend
+- `electron-updater` sin integrar
 
 ---
 
-## Roadmap de distribución (futuro)
-
-| Tienda | Estado | Qué se necesita |
-|---|---|---|
-| **Distribución directa** (.dmg/.exe) | ✅ Funcionando | GitHub Actions ya configurado |
-| **Mac App Store** | Pendiente | Apple Developer Program ($99/año) + certificado distribución + sandbox entitlements en electron-builder |
-| **Microsoft Store** | Pendiente | Cuenta Microsoft Dev ($19 único) + cambiar target Windows a `appx` en electron-builder |
-| **Google Play (Android)** | Proyecto separado | Requiere app móvil distinta — Capacitor puede reutilizar el código React |
-| **iOS App Store** | Proyecto separado | Igual que Google Play — app nativa separada con Capacitor o React Native |
-
-**Nota importante:** Google Play y App Store de iOS son para apps **móviles**. Electron es solo escritorio. Si se quiere versión móvil, es un proyecto aparte (Capacitor reutilizaría el renderer React actual).
+## Roadmap tiendas (futuro)
+Distribución directa ✅ | Mac/MS Store / móvil — pendiente (ver notas históricas en commits viejos).
 
 ---
-
-## Lo que NO está implementado (pero el código tiene el esqueleto)
-- **Profiles** — interfaz `Profile` existe en `types/index.ts`, `activeProfileId` en settings, pero no hay reducer
-- **syncEnabled** — toggle existe en ConfigDrawer pero no conectado a ningún backend
-- **electron-updater** — en `dependencies` pero no integrado en `main/index.ts`
-- **Validación de paths** — no verifica si el archivo sigue existiendo al cargar
-- **Migraciones de store** — si cambia la estructura, datos viejos pueden fallar silenciosamente
-
----
-
-## Regla de distribución — ejecutables NUNCA van al git (2026-05-21)
-- Los archivos `.exe`, `.dmg` pesan 75–88 MB — superan el límite recomendado de GitHub (50 MB).
-- **Nunca** hacer commit/push de los ejecutables. El `.gitignore` ya los excluye (`dist/`, `releases/`).
-- Los ejecutables se suben **directo al VPS-1** (`sistemasymas.com/downloads/deskflow/`) y se sirven desde ahí.
-- Para generar builds nuevos: `npm run dist:mac` (Mac) y `npm run dist:win` (Windows), luego SCP al VPS.
-
-## Ejecutables actuales (v0.1.0)
-| Archivo | OS | Peso | URL de descarga |
-|---|---|---|---|
-| `DeskFlow-Setup-0.1.0-windows.exe` | Windows x64 | 75 MB | `https://sistemasymas.com/downloads/deskflow/DeskFlow-Setup-0.1.0-windows.exe` |
-| `DeskFlow-0.1.0-mac-arm64.dmg` | Mac Apple Silicon (M1/M2/M3/M4) | 83 MB | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-arm64.dmg` |
-| `DeskFlow-0.1.0-mac-intel.dmg` | Mac Intel | 88 MB | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-intel.dmg` |
-
-**Ruta en VPS-1:** `/var/www/vhosts/sistemasymas.com/httpdocs/downloads/deskflow/`
 
 ## Notas de operación
+- **Hotkey:** `Ctrl+Shift+D` (Mac: `Cmd+Shift+D`)
+- **Ventana:** `alwaysOnTop`, transparente, frameless; blur al perder foco
+- **Tray:** icono cuadrado azul `#2563EB`, tooltip DeskFlow
+- **Probar tema/UI:** `npm run dev` en Mac o Windows con build instalado
 
-- **Icono de app:** actualmente usa el ícono default de Electron (advertencia en build). Para cambiarlo: agregar `"icon": "resources/icon.icns"` en config mac y `"icon": "resources/icon.ico"` en config win, con los archivos correspondientes.
-- **Tray icon:** se genera programáticamente en `buildTrayIcon()` — cuadrado morado #7c6af7.
-- **Hotkey global:** `Ctrl+Shift+D` (Mac: `Cmd+Shift+D`) — toggle mostrar/ocultar.
-- **Ventana:** `alwaysOnTop: true`, baja al fondo al perder foco, sube al recuperarlo.
+---
+
+## Regla de distribución — ejecutables NUNCA en git (2026-05-21)
+Subir builds al VPS vía SCP; `.gitignore` excluye `dist/`.
+
+| Archivo | OS | URL |
+|---|---|---|
+| `DeskFlow-Setup-0.1.0-windows.exe` | Windows x64 | sistemasymas.com/downloads/deskflow/... |
+| `DeskFlow-0.1.0-mac-arm64.dmg` | Apple Silicon | idem |
+| `DeskFlow-0.1.0-mac-intel.dmg` | Intel | idem |

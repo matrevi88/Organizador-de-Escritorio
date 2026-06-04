@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('api', {
   hideWindow:       ()             => ipcRenderer.send('hide-window'),
   toggleWindow:     ()             => ipcRenderer.send('toggle-window'),
   setPanelPosition: (pos: string)  => ipcRenderer.send('set-panel-position', pos),
+  setLauncherLayout: (enabled: boolean, panelPosition?: string) =>
+    ipcRenderer.send('set-launcher-layout', enabled, panelPosition ?? 'right'),
   pickApps:         ()             => ipcRenderer.invoke('pick-apps'),
   pickFiles:        ()             => ipcRenderer.invoke('pick-files'),
   getFileIcon:      (path: string) => ipcRenderer.invoke('get-file-icon', path),
@@ -13,4 +15,9 @@ contextBridge.exposeInMainWorld('api', {
   setStartWithOS:   (enable: boolean) => ipcRenderer.send('set-start-with-os', enable),
   exportBackup:     ()                => ipcRenderer.invoke('export-backup'),
   importBackup:     ()                => ipcRenderer.invoke('import-backup'),
+  pickWatchedFolder:  ()             => ipcRenderer.invoke('pick-watched-folder') as Promise<{ canceled: boolean; path: string | null }>,
+  getFolderIndexMeta: ()             => ipcRenderer.invoke('get-folder-index-meta'),
+  refreshFolderIndex: ()             => ipcRenderer.invoke('refresh-folder-index'),
+  searchIndexed:      (query: string) => ipcRenderer.invoke('search-indexed', query),
+  setWatchedFolders:  (folders: string[]) => ipcRenderer.invoke('set-watched-folders', folders),
 })

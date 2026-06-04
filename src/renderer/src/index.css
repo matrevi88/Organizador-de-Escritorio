@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tema: claro bone (3) + azul marca (1) */
+:root {
+  --df-bone: #fafaf7;
+  --df-ink: #0b1020;
+  --df-muted: #475569;
+  --df-deep: #1e3a8a;
+  --df-accent: #2563eb;
+  --df-coral: #fb7185;
+  --df-border: rgba(11, 16, 32, 0.1);
+  --df-surface: rgba(11, 16, 32, 0.06);
+  --df-surface-hover: rgba(11, 16, 32, 0.09);
+  --df-select: rgba(37, 99, 235, 0.14);
+  --df-shadow: 0 8px 32px rgba(11, 16, 32, 0.12);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -17,15 +32,13 @@ html, body, #root {
 
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color: #f1f0ff;
+  color: var(--df-ink);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(11, 16, 32, 0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(11, 16, 32, 0.25); }
 
-/* Drag */
 .dragging { opacity: 0.5; }

@@ -1,27 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-// useRef se mantiene para ContextMenu
 import type { Group, AppItem } from '../types'
-
-function AppIcon({ item, size }: { item: AppItem; size: 'sm' | 'md' | 'lg' }) {
-  const [failed, setFailed] = useState(false)
-  const cls = size === 'sm' ? 'w-8 h-8 text-lg' : size === 'md' ? 'w-10 h-10 text-xl' : 'w-11 h-11 text-2xl'
-  if (!item.iconDataUrl || failed) {
-    return (
-      <div className={`${cls} rounded-[9px] flex items-center justify-center shadow-md`}
-        style={{ background: 'linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.06))' }}>
-        {item.icon}
-      </div>
-    )
-  }
-  return (
-    <img
-      src={item.iconDataUrl}
-      alt={item.name}
-      className={`${cls} rounded-[9px] object-contain`}
-      onError={() => setFailed(true)}
-    />
-  )
-}
+import { AppIcon } from './AppIcon'
+import { colorOnLightBg } from '../lib/colorContrast'
 
 interface Props {
   group: Group
@@ -86,46 +66,49 @@ export function GroupCard({
         onDrop={handleFileDrop}
         className={`rounded-[14px] border overflow-hidden transition-all duration-200
           ${dropOver
-            ? 'border-[#7c6af7] bg-[rgba(124,106,247,0.1)]'
-            : 'border-white/10 hover:border-white/20'}`}
-        style={{ background: dropOver ? undefined : 'rgba(255,255,255,0.05)' }}
+            ? 'border-accent bg-df-select'
+            : 'border-df hover:border-ink/15'}`}
+        style={{ background: dropOver ? undefined : 'var(--df-surface)' }}
       >
         {/* Header */}
         <div
-          className={`flex flex-col cursor-pointer select-none hover:bg-white/5 transition-colors ${compact ? 'px-2 pt-2 pb-1.5' : 'px-3 pt-2.5 pb-1.5'}`}
+          className={`flex flex-col cursor-pointer select-none hover:bg-df-hover transition-colors ${compact ? 'px-2 pt-2 pb-1.5' : 'px-3 pt-2.5 pb-1.5'}`}
           onClick={() => onToggleCollapse(group.id)}
           onDoubleClick={() => onExpand?.(group.id)}
         >
           {/* Fila 1: nombre */}
           <div className="flex items-center gap-1.5 min-w-0">
-            <div className="w-[6px] h-[6px] rounded-full flex-shrink-0" style={{ background: group.color }} />
-            <span className={`font-semibold uppercase tracking-[0.6px] text-white/60 truncate ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
+            <div
+              className="w-[7px] h-[7px] rounded-full flex-shrink-0 ring-1 ring-ink/10"
+              style={{ background: colorOnLightBg(group.color) }}
+            />
+            <span className={`font-semibold uppercase tracking-[0.6px] text-ink truncate ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
               {group.icon} {group.name}
             </span>
           </div>
 
           {/* Fila 2: acciones */}
           <div className="flex items-center gap-1 mt-1.5">
-            <span className="text-[9px] text-white/40 bg-white/5 border border-white/10 rounded-[8px] px-1 py-px">
+            <span className="text-[9px] text-ink/75 bg-df-surface border border-df rounded-[8px] px-1 py-px font-medium">
               {group.apps.length}
             </span>
             <button
-              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-white/40 hover:bg-white/10 hover:text-[#7c6af7] transition-all"
+              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-ink/70 hover:bg-df-hover hover:text-accent transition-all"
               onClick={e => { e.stopPropagation(); onAddApps(group.id) }}
               title="Agregar app (.exe / .lnk)"
             >🖥</button>
             <button
-              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-white/40 hover:bg-white/10 hover:text-[#7c6af7] transition-all"
+              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold text-ink/70 hover:bg-df-hover hover:text-accent transition-all"
               onClick={e => { e.stopPropagation(); onAddFiles(group.id) }}
               title="Agregar archivo o carpeta"
             >+</button>
             <button
-              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[10px] text-white/40 hover:bg-white/10 hover:text-white transition-all"
+              className="w-[20px] h-[20px] rounded-md flex items-center justify-center text-[10px] text-ink/70 hover:bg-df-hover hover:text-ink transition-all"
               onClick={e => { e.stopPropagation(); onToggleVisible(group.id) }}
               title={group.visible ? 'Ocultar grupo' : 'Mostrar grupo'}
             >{group.visible ? '👁' : '🙈'}</button>
             <span
-              className="text-[9px] text-white/40 transition-transform duration-200 inline-block ml-auto"
+              className="text-[9px] text-ink/70 transition-transform duration-200 inline-block ml-auto"
               style={{ transform: group.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
             >▾</span>
           </div>
@@ -133,7 +116,7 @@ export function GroupCard({
 
         {/* Drop hint */}
         {dropOver && (
-          <div className="mx-2 mb-2 py-3 rounded-[10px] border border-dashed border-[#7c6af7] text-center text-[11px] text-[#7c6af7]">
+          <div className="mx-2 mb-2 py-3 rounded-[10px] border border-dashed border-accent text-center text-[11px] text-accent">
             Suelta para agregar al grupo
           </div>
         )}
@@ -143,7 +126,7 @@ export function GroupCard({
           <div className={`grid gap-1 pb-2.5 pt-0.5 ${compact ? 'grid-cols-3 px-1.5' : 'grid-cols-4 px-2.5'}`}>
             {group.apps.length === 0 ? (
               <button
-                className={`${compact ? 'col-span-3' : 'col-span-4'} flex flex-col items-center gap-1 py-3 text-white/25 text-[10px] hover:text-white/40 transition-colors`}
+                className={`${compact ? 'col-span-3' : 'col-span-4'} flex flex-col items-center gap-1 py-3 text-ink/65 text-[10px] hover:text-ink transition-colors`}
                 onClick={() => onAddFiles(group.id)}
               >
                 <span className="text-lg">+</span>
@@ -153,13 +136,13 @@ export function GroupCard({
               group.apps.map(app => (
                 <button
                   key={app.id}
-                  className="flex flex-col items-center gap-0.5 p-1 rounded-[8px] hover:bg-white/8 transition-colors group/app"
+                  className="flex flex-col items-center gap-0.5 p-1 rounded-[8px] hover:bg-df-hover transition-colors group/app"
                   onClick={() => onOpenApp(app)}
                   onContextMenu={e => openCtxMenu(e, app)}
                   title={app.path ? `${app.name}\n${app.path}` : app.name}
                 >
                   <AppIcon item={app} size={compact ? 'sm' : 'md'} />
-                  <span className="text-[9px] text-white/45 group-hover/app:text-white/80 transition-colors w-full text-center leading-tight overflow-hidden"
+                  <span className="text-[9px] text-ink/75 group-hover/app:text-ink transition-colors w-full text-center leading-tight overflow-hidden"
                     style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                     {app.name}
                   </span>
@@ -229,25 +212,22 @@ function ContextMenu({ app, x, y, onOpen, onRemove, onClose }: CtxProps) {
 
       <div
         ref={menuRef}
-        className="fixed z-[9999] rounded-[12px] border border-white/15 overflow-hidden shadow-2xl"
+        className="fixed z-[9999] rounded-[12px] border border-df overflow-hidden shadow-2xl bg-bone"
         style={{
           left: pos.x,
           top: pos.y,
-          background: 'rgba(18,16,36,0.97)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
           minWidth: 180,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.08) inset'
+          boxShadow: '0 12px 40px rgba(11, 16, 32, 0.16)'
         }}
       >
         {/* Info del ítem */}
-        <div className="px-3 pt-2.5 pb-2 border-b border-white/8">
+        <div className="px-3 pt-2.5 pb-2 border-b border-df">
           <div className="flex items-center gap-2">
             <AppIcon item={app} size="sm" />
             <div className="min-w-0">
               <div className="text-[12px] font-semibold truncate">{app.name}</div>
               {app.path && (
-                <div className="text-[9px] text-white/30 truncate" style={{ maxWidth: 150 }}>{app.path}</div>
+                <div className="text-[9px] text-df-muted truncate" style={{ maxWidth: 150 }}>{app.path}</div>
               )}
             </div>
           </div>
@@ -267,7 +247,7 @@ function MenuBtn({ icon, label, onClick, danger }: { icon: string; label: string
   return (
     <button
       className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors
-        ${danger ? 'text-red-400 hover:bg-red-500/10' : 'text-white/80 hover:bg-white/8'}`}
+        ${danger ? 'text-red-600 hover:bg-red-500/10' : 'text-ink/85 hover:bg-df-hover'}`}
       onClick={onClick}
     >
       <span className="w-4 text-center flex-shrink-0 text-[11px] opacity-60">{icon}</span>

@@ -25,6 +25,21 @@ export interface Profile {
 
 export type PanelPosition = 'left' | 'float' | 'right'
 
+export interface FolderIndexMeta {
+  version: 1
+  updatedAt: string
+  entryCount: number
+  folders: string[]
+}
+
+export interface IndexedSearchHit {
+  path: string
+  name: string
+  rootLabel: string
+  isDirectory: boolean
+  icon: string
+}
+
 export interface Settings {
   startWithOS: boolean
   collapseOnStart: boolean
@@ -32,4 +47,5 @@ export interface Settings {
   opacity: number
   panelPosition: PanelPosition
   activeProfileId: string
+  watchedFolders: string[]
 }

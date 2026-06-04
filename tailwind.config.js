@@ -4,14 +4,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: '#7c6af7',
-        accent2: '#5eead4',
-        accent3: '#f472b6',
-        surface: 'rgba(255,255,255,0.05)',
+        bone: '#FAFAF7',
+        ink: '#0B1020',
+        'df-muted': '#475569',
+        deep: '#1E3A8A',
+        accent: '#2563EB',
+        coral: '#FB7185'
       },
-      fontFamily: {
-        sans: ['"Segoe UI"', 'system-ui', '-apple-system', 'sans-serif'],
+      borderColor: {
+        df: 'rgba(11, 16, 32, 0.1)'
       },
+      backgroundColor: {
+        'df-surface': 'rgba(11, 16, 32, 0.06)',
+        'df-hover': 'rgba(11, 16, 32, 0.09)',
+        'df-select': 'rgba(37, 99, 235, 0.14)'
+      }
     }
   },
   plugins: []

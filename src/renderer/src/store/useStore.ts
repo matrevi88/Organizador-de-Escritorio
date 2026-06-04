@@ -3,7 +3,7 @@ import type { Group, AppItem, Settings, PanelPosition } from '../types'
 
 const DEFAULT_GROUPS: Group[] = [
   {
-    id: 'trabajo', name: 'Trabajo', icon: '💼', color: '#7c6af7',
+    id: 'trabajo', name: 'Trabajo', icon: '💼', color: '#2563eb',
     visible: true, collapsed: true,
     apps: [
       { id: 'outlook',    name: 'Outlook',    icon: '📧' },
@@ -15,7 +15,7 @@ const DEFAULT_GROUPS: Group[] = [
     ]
   },
   {
-    id: 'dev', name: 'Desarrollo', icon: '⚡', color: '#5eead4',
+    id: 'dev', name: 'Desarrollo', icon: '⚡', color: '#0d9488',
     visible: true, collapsed: true,
     apps: [
       { id: 'vscode',    name: 'VS Code',  icon: '💻' },
@@ -37,7 +37,7 @@ const DEFAULT_GROUPS: Group[] = [
     ]
   },
   {
-    id: 'social', name: 'Social', icon: '💬', color: '#34d399',
+    id: 'social', name: 'Social', icon: '💬', color: '#059669',
     visible: true, collapsed: true,
     apps: [
       { id: 'whatsapp', name: 'WhatsApp', icon: '💬' },
@@ -64,14 +64,17 @@ const DEFAULT_SETTINGS: Settings = {
   syncEnabled: true,
   opacity: 100,
   panelPosition: 'right',
-  activeProfileId: 'personal'
+  activeProfileId: 'personal',
+  watchedFolders: []
 }
 
 function loadSettings(): Settings {
   try {
     const raw = window.api?.loadStore('settings')
     if (!raw) return DEFAULT_SETTINGS
-    return { ...DEFAULT_SETTINGS, ...(raw as object) }
+    const merged = { ...DEFAULT_SETTINGS, ...(raw as object) }
+    if (!Array.isArray(merged.watchedFolders)) merged.watchedFolders = []
+    return merged
   } catch { return DEFAULT_SETTINGS }
 }
 

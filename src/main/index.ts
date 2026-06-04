@@ -2,18 +2,48 @@ import { app, shell, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, gl
 import { join, basename, extname } from 'path'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, unlinkSync, copyFileSync, lstatSync, realpathSync } from 'fs'
 import { execFileNoThrow } from '../utils/execFileNoThrow'
+import {
+  loadIndexFromDisk,
+  scanWatchedFolders,
+  searchIndexed,
+  getIndexMeta,
+  fallbackIconForPath
+} from './folderIndex'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 
+type PanelPos = 'left' | 'right' | 'float'
+
+function panelPositionFromStore(): PanelPos {
+  const settings = readStore().settings as { panelPosition?: string } | null
+  const pos = settings?.panelPosition
+  if (pos === 'left' || pos === 'float') return pos
+  return 'right'
+}
+
+/** Launcher compacto: 340px ancho, altura ~52% pantalla (máx. 480). */
+function launcherWindowBounds(panelPos: PanelPos = 'right') {
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
+  const width = 340
+  const height = Math.min(480, Math.max(380, Math.round(sh * 0.52)))
+  const y = 20
+  let x: number
+  if (panelPos === 'right') x = sw - width - 24
+  else if (panelPos === 'left') x = 24
+  else x = Math.round(sw / 2 - width / 2)
+  return { width, height, x, y }
+}
+
 function createWindow(): void {
-  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
+  const panelPos = panelPositionFromStore()
+  const bounds = launcherWindowBounds(panelPos)
 
   mainWindow = new BrowserWindow({
-    width: 340,
-    height: screenHeight - 40,
-    x: screenWidth - 364,
-    y: 20,
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -53,9 +83,9 @@ function buildTrayIcon(): Electron.NativeImage {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4
       const inSquare = x >= 2 && x <= 13 && y >= 2 && y <= 13
-      buf[i]     = inSquare ? 124 : 0
-      buf[i + 1] = inSquare ? 106 : 0
-      buf[i + 2] = inSquare ? 247 : 0
+      buf[i]     = inSquare ? 37 : 0
+      buf[i + 1] = inSquare ? 99 : 0
+      buf[i + 2] = inSquare ? 235 : 0
       buf[i + 3] = inSquare ? 255 : 0
     }
   }
@@ -167,6 +197,29 @@ ipcMain.on('set-panel-position', (_event, pos: 'left' | 'right' | 'float') => {
   else                      mainWindow.setPosition(Math.round(sw / 2 - winWidth / 2), 20)
 
   mainWindow.setSize(winWidth, winHeight)
+  mainWindow.setAlwaysOnTop(true)
+})
+
+// Vista Launcher vs Organizar (panel alto en modo organizar)
+ipcMain.on('set-launcher-layout', (_event, launcher: boolean, panelPos: PanelPos = 'right') => {
+  if (!mainWindow) return
+  const { width: sw, height: sh } = screen.getPrimaryDisplay().workAreaSize
+
+  mainWindow.setAlwaysOnTop(false)
+
+  if (launcher) {
+    const b = launcherWindowBounds(panelPos)
+    mainWindow.setPosition(b.x, b.y)
+    mainWindow.setSize(b.width, b.height)
+  } else {
+    const winWidth = 340
+    const top = 20
+    if (panelPos === 'right') mainWindow.setPosition(sw - winWidth - 24, top)
+    else if (panelPos === 'left') mainWindow.setPosition(24, top)
+    else mainWindow.setPosition(Math.round(sw / 2 - winWidth / 2), top)
+    mainWindow.setSize(winWidth, sh - 40)
+  }
+
   mainWindow.setAlwaysOnTop(true)
 })
 
@@ -297,6 +350,55 @@ ipcMain.on('open-file', (_event, filePath: string) => {
   shell.openPath(filePath)
 })
 
+// ─── Carpetas vigiladas (índice para Launcher) ───
+
+function watchedFoldersFromStore(): string[] {
+  const settings = readStore().settings as { watchedFolders?: string[] } | null
+  return Array.isArray(settings?.watchedFolders) ? settings.watchedFolders : []
+}
+
+function persistWatchedFolders(folders: string[]) {
+  const store = readStore()
+  const prev = (store.settings as Record<string, unknown>) ?? {}
+  store.settings = { ...prev, watchedFolders: folders }
+  writeStore(store)
+}
+
+ipcMain.handle('pick-watched-folder', async () => {
+  if (!mainWindow) return { canceled: true, path: null as string | null }
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Agregar carpeta para indexar',
+    defaultPath: app.getPath('home'),
+    properties: ['openDirectory'],
+    buttonLabel: 'Vigilar esta carpeta'
+  })
+  if (result.canceled || !result.filePaths[0]) return { canceled: true, path: null }
+  return { canceled: false, path: result.filePaths[0] }
+})
+
+ipcMain.handle('get-folder-index-meta', () => getIndexMeta())
+
+ipcMain.handle('refresh-folder-index', () => {
+  const folders = watchedFoldersFromStore()
+  return scanWatchedFolders(folders).meta
+})
+
+ipcMain.handle('search-indexed', (_event, query: string) => {
+  return searchIndexed(query).map((entry) => ({
+    path: entry.path,
+    name: entry.name,
+    rootLabel: entry.rootLabel,
+    isDirectory: entry.isDirectory,
+    icon: fallbackIconForPath(entry.path, entry.isDirectory)
+  }))
+})
+
+ipcMain.handle('set-watched-folders', (_event, folders: string[]) => {
+  const unique = [...new Set(folders.filter((f) => typeof f === 'string' && f.length > 0))]
+  persistWatchedFolders(unique)
+  return scanWatchedFolders(unique).meta
+})
+
 // Exportar datos a archivo .deskflow
 ipcMain.handle('export-backup', async () => {
   if (!mainWindow) return { success: false, error: 'No window' }
@@ -367,6 +469,12 @@ app.whenReady().then(() => {
   app.setAppUserModelId('com.sistemasymas.deskflow')
 
   autoBackup()
+
+  loadIndexFromDisk()
+  const watched = watchedFoldersFromStore()
+  if (watched.length > 0) {
+    setImmediate(() => scanWatchedFolders(watched))
+  }
 
   // Autostart solo aplica en la app instalada, nunca en desarrollo
   if (app.isPackaged) {
