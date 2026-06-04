@@ -190,10 +190,7 @@ export default function App() {
           groups={groups}
           search={search}
           onSearchChange={setSearch}
-          onOpenApp={(app) => {
-            handleOpenApp(app)
-            if (app.path) sendHide()
-          }}
+          onOpenApp={handleOpenApp}
           onOrganize={goOrganize}
           onSettings={() => setConfigOpen(true)}
           onHide={sendHide}

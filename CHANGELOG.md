@@ -4,6 +4,14 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Versión sem�
 
 ---
 
+## [Unreleased]
+
+### Corregido
+
+- **Launcher (Windows):** al abrir un acceso ya no se oculta DeskFlow a la bandeja; mismo comportamiento que en Organizar (antes `sendHide()` tras cada clic).
+
+---
+
 ## [0.1.0] — 2026-06-04 (build público en VPS)
 
 Release de distribución con UX rediseñada (sesión 2026-06-03/04). Código en GitHub `master` commit `453a2f8` (+ `2b88e76` accesos directos).
