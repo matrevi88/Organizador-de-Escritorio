@@ -8,7 +8,11 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/). Versión sem�
 
 ### Corregido
 
-- **Launcher (Windows):** al abrir un acceso ya no se oculta DeskFlow a la bandeja; mismo comportamiento que en Organizar (antes `sendHide()` tras cada clic).
+- **Launcher (Windows):** al abrir un acceso ya no se oculta DeskFlow a la bandeja; mismo comportamiento que en Organizar (antes `sendHide()` tras cada clic). Publicado en VPS + documentado en `memory/deskflow-cambios-2026-06.md`.
+
+### Web (sistemasymas-web, 2026-06-04)
+
+- Landing `/deskflow`: guías de instalación visuales (pasos numerados, mock SmartScreen, paneles Windows/Mac). Ver `memory/deskflow-web-landing.md`.
 
 ---
 

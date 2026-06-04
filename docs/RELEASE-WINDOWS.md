@@ -36,7 +36,7 @@ Salida esperada:
 - `dist/DeskFlow-Setup-<version>-windows.exe`
 - `dist/DeskFlow-Setup-<version>-windows.exe.sha256`
 
-Anotar el **tamaño en bytes** y actualizar la web (`DeskflowDownloads.tsx`) si cambió.
+Anotar el **tamaño en bytes** y actualizar la web (`WINDOWS_EXE_BYTES` y texto ~75 MB en `components/DeskflowDownloads.tsx`) si cambió.
 
 ## Subir al VPS (descargas estáticas)
 
@@ -59,8 +59,10 @@ Comprobar en el navegador (Ctrl+F5):
 ```bash
 cd proyectos/sistemasymas-web
 git push origin main
-# Plesk: Pull en sistemasymas.com (solo UI; los .exe no pasan por Next)
+# Deploy: Plesk Pull en sistemasymas.com, o SSH (ver memory/deskflow-cambios-2026-06.md)
 ```
+
+Documentación UX y archivos: `memory/deskflow-web-landing.md`, `docs/DESKFLOW-LANDING.md` (repo web).
 
 ## Pruebas mínimas en un PC Windows limpio (o VM)
 

@@ -21,6 +21,9 @@ Organizador de escritorio tipo lanzador — agrupa apps, archivos y carpetas en 
 | 2026-06-03 | Accesos directos resueltos a ruta real (.lnk, alias Mac, symlinks) | `2b88e76` (incluido en push) |
 | 2026-06-03 | Landing `/deskflow` colores azul marca | `sistemasymas-web` `b1ea6e5` → `origin/main` (Pull Plesk = solo UI web) |
 | 2026-06-04 | Builds v0.1.0 (.exe + 2× .dmg) subidos al VPS por SCP | Sin commit (artefactos en `dist/`, ignorados) |
+| 2026-06-04 | Instalador Windows NSIS + `release:win` + `.bat` limpieza | `5f2e373` |
+| 2026-06-04 | Fix launcher: no ocultar al abrir acceso (Windows) | `7f42a3f` + `.exe` VPS 78 714 832 B |
+| 2026-06-04 | Landing `/deskflow` guías visuales (web) | `sistemasymas-web` `bde7a08`, deploy VPS |
 
 **Archivos nuevos principales:** `folderIndex.ts`, `LauncherView.tsx`, `OrganizeView.tsx`, `WatchedFoldersSection.tsx`, `AppIcon.tsx`, `launcherSearch.ts`, `colorContrast.ts`, `theme.ts`.
 
@@ -153,8 +156,9 @@ Tag `v*` → GitHub Actions (`.github/workflows/build.yml`).
 - Stripe, tablas `deskflow_licenses`, activación en Electron — ver secciones históricas abajo si se retoma.
 
 ### Web landing `/deskflow`
-- Enlaces de descarga: estáticos en VPS (actualizados 2026-06-04).
-- Estilo azul en repo `main` (`b1ea6e5`); en producción requiere **Pull Plesk** de `sistemasymas-web` si aún se ve morado.
+- Enlaces de descarga: estáticos en VPS (`.exe` con fix launcher, 2026-06-04 tarde).
+- Guías visuales para clientes no técnicos: `sistemasymas-web` `DeskflowDownloads.tsx` — memoria `memory/deskflow-web-landing.md`.
+- Deploy web: `memory/deskflow-cambios-2026-06.md` (Plesk o SSH VPS-1 si Martha lo pide al agente).
 
 ### Código con esqueleto sin usar
 - Profiles (`activeProfileId` sin reducer completo)
@@ -185,7 +189,7 @@ Subir builds al VPS vía SCP; `.gitignore` excluye `dist/`.
 | `DeskFlow-0.1.0-mac-arm64.dmg` | Apple Silicon | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-arm64.dmg` |
 | `DeskFlow-0.1.0-mac-intel.dmg` | Intel | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-intel.dmg` |
 
-**Último build subido al VPS:** 2026-06-04 — Mac **re-firmados** (fix «dañado»); Windows sin cambio ese día.
+**Último build Windows en VPS:** 2026-06-04 (tarde) — `DeskFlow-Setup-0.1.0-windows.exe`, 78 714 832 bytes, SHA256 `9936e0bb…` (incluye fix launcher). Mac: re-firmados mismo día (fix «dañado»).
 
 **macOS sin Apple Developer ID:** Gatekeeper puede mostrar «dañado» o bloquear. Solución usuario: clic derecho → Abrir, o `xattr -cr /Applications/DeskFlow.app`. Build: firma ad hoc en `afterPack` (`electron-builder.config.cjs`).
 
