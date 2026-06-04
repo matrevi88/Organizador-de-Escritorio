@@ -7,7 +7,26 @@ Organizador de escritorio tipo lanzador — agrupa apps, archivos y carpetas en 
 **AppId:** `com.sistemasymas.deskflow`  
 **Repo:** `github.com/matrevi88/Organizador-de-Escritorio` (privado)  
 **Ruta local:** `~/Documents/sistemasymas/proyectos/organizador-escritorio/`  
-**Rama:** `master`
+**Rama:** `master`  
+**Changelog:** `CHANGELOG.md` (raíz del repo)  
+**Registro fábrica:** `memory/deskflow-cambios-2026-06.md` (repo sistemasymas)
+
+---
+
+## Historial reciente (2026-06-03 → 04)
+
+| Fecha | Qué | Git / deploy |
+|-------|-----|----------------|
+| 2026-06-03 | Fase A Launcher + Fase B carpetas vigiladas + tema bone/azul + contraste categorías | `453a2f8` → `origin/master` |
+| 2026-06-03 | Accesos directos resueltos a ruta real (.lnk, alias Mac, symlinks) | `2b88e76` (incluido en push) |
+| 2026-06-03 | Landing `/deskflow` colores azul marca | `sistemasymas-web` `b1ea6e5` → `origin/main` (Pull Plesk = solo UI web) |
+| 2026-06-04 | Builds v0.1.0 (.exe + 2× .dmg) subidos al VPS por SCP | Sin commit (artefactos en `dist/`, ignorados) |
+
+**Archivos nuevos principales:** `folderIndex.ts`, `LauncherView.tsx`, `OrganizeView.tsx`, `WatchedFoldersSection.tsx`, `AppIcon.tsx`, `launcherSearch.ts`, `colorContrast.ts`, `theme.ts`.
+
+**Archivos tocados:** `App.tsx`, `ConfigDrawer.tsx`, `GroupCard.tsx`, `GroupModal.tsx`, `main/index.ts`, `preload/index.ts`, `useStore.ts`, `types/index.ts`, `index.css`, `tailwind.config.js`.
+
+Ver lista completa en `CHANGELOG.md` sección `[0.1.0] — 2026-06-04`.
 
 ---
 
@@ -134,7 +153,8 @@ Tag `v*` → GitHub Actions (`.github/workflows/build.yml`).
 - Stripe, tablas `deskflow_licenses`, activación en Electron — ver secciones históricas abajo si se retoma.
 
 ### Web landing `/deskflow`
-- Descargas OK; opcional alinear colores landing al azul marca (hoy puede quedar morado legacy).
+- Enlaces de descarga: estáticos en VPS (actualizados 2026-06-04).
+- Estilo azul en repo `main` (`b1ea6e5`); en producción requiere **Pull Plesk** de `sistemasymas-web` si aún se ve morado.
 
 ### Código con esqueleto sin usar
 - Profiles (`activeProfileId` sin reducer completo)
@@ -161,6 +181,22 @@ Subir builds al VPS vía SCP; `.gitignore` excluye `dist/`.
 
 | Archivo | OS | URL |
 |---|---|---|
-| `DeskFlow-Setup-0.1.0-windows.exe` | Windows x64 | sistemasymas.com/downloads/deskflow/... |
-| `DeskFlow-0.1.0-mac-arm64.dmg` | Apple Silicon | idem |
-| `DeskFlow-0.1.0-mac-intel.dmg` | Intel | idem |
+| `DeskFlow-Setup-0.1.0-windows.exe` | Windows x64 | `https://sistemasymas.com/downloads/deskflow/DeskFlow-Setup-0.1.0-windows.exe` |
+| `DeskFlow-0.1.0-mac-arm64.dmg` | Apple Silicon | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-arm64.dmg` |
+| `DeskFlow-0.1.0-mac-intel.dmg` | Intel | `https://sistemasymas.com/downloads/deskflow/DeskFlow-0.1.0-mac-intel.dmg` |
+
+**Último build subido al VPS:** 2026-06-04 (commit `453a2f8` — Launcher, tema bone/azul, carpetas vigiladas).
+
+**Procedimiento de subida** (también en `CHANGELOG.md`):
+
+```bash
+npm run dist:mac && npm run dist:win
+mkdir -p releases-upload
+cp dist/DeskFlow-0.1.0-arm64.dmg releases-upload/DeskFlow-0.1.0-mac-arm64.dmg
+cp dist/DeskFlow-0.1.0.dmg releases-upload/DeskFlow-0.1.0-mac-intel.dmg
+cp "dist/DeskFlow Setup 0.1.0.exe" releases-upload/DeskFlow-Setup-0.1.0-windows.exe
+scp -i ~/.ssh/id_ed25519_vps3_coolify releases-upload/* \
+  root@74.208.25.241:/var/www/vhosts/sistemasymas.com/httpdocs/downloads/deskflow/
+```
+
+Nombres deben coincidir con `proyectos/sistemasymas-web/lib/deskflow.ts`.
