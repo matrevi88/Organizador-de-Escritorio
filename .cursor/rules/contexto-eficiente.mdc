@@ -1,0 +1,45 @@
+---
+description: Contexto quirúrgico — ahorra tokens sin sacrificar BUSINESS_LOGIC, memoria ni runbooks
+alwaysApply: true
+---
+
+# Contexto eficiente (sin perder calidad)
+
+**Principio:** reducir ruido, no inteligencia. Nunca omitir contexto que evita errores repetidos.
+
+## Contexto OBLIGATORIO — no saltar por ahorro
+
+| Fuente | Cuándo |
+|--------|--------|
+| `BUSINESS_LOGIC.md` (raíz del proyecto) | Cualquier feature, bug de negocio o decisión de producto |
+| `.claude/memory/` del proyecto | Al iniciar sesión o entrar a código de este repo |
+| Archivo(s) que fallan o que se van a editar | Antes de implementar o depurar |
+| Runbooks (`docs/DEPLOY.md`, `RUNBOOK-*.md`, `docs/*VARIABLES*`, etc.) | Antes de deploy o depurar prod |
+| Memoria fábrica `~/Documents/sistemasymas/memory/decisiones.md` | Si la decisión puede contradecir algo acordado en la fábrica |
+
+**Prohibido:** sustituir `BUSINESS_LOGIC.md` o memoria del proyecto por suposiciones. Si no está cargado, leerlo.
+
+## Contexto a recortar (ruido)
+
+- No `@` carpetas enteras (`src/`, `app/`) si basta un archivo o subcarpeta concreta.
+- No releer archivos ya en el contexto del chat salvo que cambiaron.
+- No volcar memoria completa en la respuesta — aplicarla en silencio; resumir solo lo que Martha deba decidir.
+- Chat nuevo por tarea distinta (feature, bug, deploy).
+
+## Cuándo SÍ explorar más
+
+- Bug no localizado y archivo fallido no obvio.
+- Feature multi-capa (BD + API + UI) sin PRP previo.
+- Martha pide arquitectura, auditoría o «entiende el proyecto».
+
+## Modelos
+
+- **Auto** por defecto.
+- Modelo premium manual solo si Martha lo pide o la tarea es arquitectura/revisión crítica compleja.
+
+## Check antes de actuar
+
+1. ¿Negocio? → `BUSINESS_LOGIC.md`
+2. ¿Decisiones previas? → `.claude/memory/`
+3. ¿Dónde tocar? → archivo concreto
+4. ¿Deploy/prod? → runbook primero

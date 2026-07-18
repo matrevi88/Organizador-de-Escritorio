@@ -1,3 +1,10 @@
+# DeskFlow — PLANTILLA ARCHIVADA (producto retirado 2026-06-20)
+
+> **No es producto activo.** Código de referencia para futuras apps Electron Mac + Windows.  
+> Golden path: `../../docs/patrones-app-escritorio-electron.md` · Skill: `/desktop-app`
+
+---
+
 # DeskFlow
 
 Organizador de escritorio (Electron) — lanzador por grupos, carpetas vigiladas, tema claro sistemasymas.
@@ -20,9 +27,9 @@ npm run typecheck
 
 ## Distribución
 
-- Repo: `github.com/matrevi88/Organizador-de-Escritorio` — rama `master`
-- Descargas: https://sistemasymas.com/deskflow
-- Binarios en VPS: `/downloads/deskflow/` (no van en git)
+- Repo: `github.com/matrevi88/Organizador-de-Escritorio` — rama `master` (archivable)
+- ~~Descargas: https://sistemasymas.com/deskflow~~ — retirado 2026-06-20
+- Binarios históricos (opcional borrar en VPS): `/downloads/deskflow/`
 
 ```bash
 npm run release:win   # build + verificación pre-subida

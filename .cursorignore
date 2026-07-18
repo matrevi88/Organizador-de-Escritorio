@@ -1,0 +1,95 @@
+# .cursorignore — fábrica de apps de Martha
+# Le dice a Cursor qué NO indexar ni mandar a sus servidores.
+# Ahorra tokens, acelera autocompletado, evita fuga de secretos.
+
+# --- Dependencias y builds ---
+node_modules/
+.pnpm-store/
+.yarn/
+jspm_packages/
+bower_components/
+.next/
+out/
+.nuxt/
+.output/
+.svelte-kit/
+dist/
+build/
+.cache/
+.parcel-cache/
+.turbo/
+.vite/
+
+# --- TypeScript / lint caches ---
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# --- Cobertura y tests ---
+coverage/
+.nyc_output/
+*.lcov
+playwright-report/
+test-results/
+
+# --- Logs y runtime ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# --- Secretos y env (CRÍTICO) ---
+.env
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.crt
+.secrets/
+
+# --- Datos sensibles / respaldos ---
+respaldos/
+backups/
+*.sql
+*.dump
+*.sqlite
+*.sqlite3
+*.db
+dumps/
+
+# --- Generados por agentes / scaffolds ---
+generated/
+.bak-*
+*.bak-premium-saas
+
+# --- Mobile (Capacitor / Android / iOS) ---
+android/build/
+android/app/build/
+android/.gradle/
+ios/Pods/
+ios/build/
+*.apk
+*.aab
+*.ipa
+
+# --- SO ---
+.DS_Store
+Thumbs.db
+
+# --- Editor ---
+.vscode-test/
+
+# --- Vite timestamps ---
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# --- Memoria del agente que NO queremos indexar (transcripts viejos) ---
+.claude/memory/transcripts/
+.claude/cache/
+.cursor/.hooks/

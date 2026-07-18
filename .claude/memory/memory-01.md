@@ -1,4 +1,6 @@
-# DeskFlow — Memoria del proyecto
+# DeskFlow — Memoria del proyecto (ARCHIVADO 2026-06-20)
+
+> Producto retirado. Conservar como referencia técnica. Golden path: `sistemasymas/docs/patrones-app-escritorio-electron.md`
 
 ## Qué es
 Organizador de escritorio tipo lanzador — agrupa apps, archivos y carpetas en grupos visuales con drag & drop. Vive en el tray y se muestra/oculta con `Ctrl+Shift+D`.
@@ -9,11 +11,11 @@ Organizador de escritorio tipo lanzador — agrupa apps, archivos y carpetas en 
 **Ruta local:** `~/Documents/sistemasymas/proyectos/organizador-escritorio/`  
 **Rama:** `master`  
 **Changelog:** `CHANGELOG.md` (raíz del repo)  
-**Registro fábrica:** `memory/deskflow-cambios-2026-06.md` (repo sistemasymas)
+**Registro fábrica:** `memory/reference/deskflow-archivo/deskflow-cambios-2026-06.md`
 
 ---
 
-## Historial reciente (2026-06-03 → 04)
+## Historial reciente (2026-06-03 → 16)
 
 | Fecha | Qué | Git / deploy |
 |-------|-----|----------------|
@@ -24,6 +26,7 @@ Organizador de escritorio tipo lanzador — agrupa apps, archivos y carpetas en 
 | 2026-06-04 | Instalador Windows NSIS + `release:win` + `.bat` limpieza | `5f2e373` |
 | 2026-06-04 | Fix launcher: no ocultar al abrir acceso (Windows) | `7f42a3f` + `.exe` VPS 78 714 832 B |
 | 2026-06-04 | Landing `/deskflow` guías visuales (web) | `sistemasymas-web` `bde7a08`, deploy VPS |
+| 2026-06-16 | Fix Rosetta: build arm64 fresco compilado en Mac Apple Silicon; DMGs mac-arm64 + mac-intel actualizados en VPS. App reinstalada en `/Applications/` sin cuarentena. | Sin commit (artefactos en `dist/`, ignorados). VPS SCP. |
 
 **Archivos nuevos principales:** `folderIndex.ts`, `LauncherView.tsx`, `OrganizeView.tsx`, `WatchedFoldersSection.tsx`, `AppIcon.tsx`, `launcherSearch.ts`, `colorContrast.ts`, `theme.ts`.
 

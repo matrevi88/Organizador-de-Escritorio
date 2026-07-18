@@ -1,6 +1,7 @@
 # DeskFlow — Release Windows (instalador / actualización / desinstalación)
 
-Checklist obligatorio **antes de publicar** cada versión en `sistemasymas.com/deskflow`. Evita los fallos vistos en junio 2026 (app en bandeja, instalación a medias, sin entrada en Aplicaciones).
+> **Plantilla archivada (2026-06-20).** Golden path genérico: `sistemasymas/docs/patrones-app-escritorio-electron.md`  
+> Checklist obligatorio **antes de publicar** cada versión de app Electron en Windows.
 
 ## Causas que ya están mitigadas en el repo
 

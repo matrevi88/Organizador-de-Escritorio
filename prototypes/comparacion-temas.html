@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeskFlow — Comparar 3 temas de color</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #1a1a22;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .bar {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(10,10,14,0.95);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 12px 16px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    }
+    .bar h1 { font-size: 14px; font-weight: 700; margin-right: 8px; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      padding: 8px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 12px; font-weight: 600;
+      cursor: pointer;
+    }
+    .tab.active { color: #fff; border-color: transparent; }
+    .tab[data-t="marca"].active { background: linear-gradient(135deg, #1e3a8a, #2563eb); }
+    .tab[data-t="prod"].active { background: #10b981; color: #042f1a; }
+    .tab[data-t="claro"].active { background: #1e3a8a; }
+    .hint { font-size: 11px; color: #64748b; max-width: 520px; line-height: 1.45; }
+
+    .stage {
+      display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+      gap: 32px; padding: 32px 20px 48px;
+      background:
+        url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Crect fill='%23222' width='40' height='40'/%3E%3C/svg%3E");
+    }
+    .wallpaper-note {
+      width: 100%; text-align: center; font-size: 11px; color: #64748b; margin-bottom: 8px;
+    }
+
+    /* Panel mock 340px */
+    .panel {
+      width: 340px;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .panel .drag {
+      height: 18px; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; letter-spacing: 4px; color: var(--muted); opacity: 0.4;
+    }
+    .panel header {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel .logo {
+      width: 20px; height: 20px; border-radius: 5px;
+      background: var(--accent-gradient);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: #fff;
+    }
+    .panel .title { font-size: 12px; font-weight: 600; flex: 1; }
+    .panel .icon-btn {
+      width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--muted); font-size: 11px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .search-wrap {
+      margin: 10px 12px 8px; display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .search-wrap input {
+      flex: 1; border: none; background: transparent; outline: none;
+      font-size: 14px; color: var(--text);
+    }
+    .search-wrap input::placeholder { color: var(--muted); }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 8px; }
+    .chip {
+      font-size: 10px; padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .chip.on { background: var(--accent); border-color: transparent; color: var(--chip-on-text); }
+    .results { border-top: 1px solid var(--border); }
+    .row {
+      display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      border-left: 3px solid transparent;
+    }
+    .row.sel { background: var(--sel-bg); border-left-color: var(--accent); }
+    .row .ico {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--surface);
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+    }
+    .row .name { font-size: 13px; font-weight: 600; }
+    .row .sub { font-size: 10px; color: var(--muted); }
+    .row .badge {
+      font-size: 9px; padding: 2px 8px; border-radius: 20px;
+      background: var(--badge-bg); color: var(--badge-text); margin-left: auto;
+    }
+    .foot {
+      padding: 8px 12px; font-size: 9px; color: var(--muted);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between;
+    }
+
+    .sell-box {
+      max-width: 340px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.4);
+    }
+    .sell-box h2 { font-size: 15px; margin-bottom: 8px; color: #f8fafc; }
+    .sell-box p { font-size: 12px; color: #94a3b8; line-height: 1.5; margin-bottom: 8px; }
+    .sell-box ul { font-size: 11px; color: #cbd5e1; margin-left: 18px; }
+    .sell-box li { margin-bottom: 4px; }
+    .swatches { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    .swatch { width: 28px; height: 28px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); }
+
+    /* Tema 1 — Marca sistemasymas */
+    .panel.marca {
+      --bg: rgba(11, 16, 32, 0.94);
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --border: rgba(255,255,255,0.1);
+      --surface: rgba(255,255,255,0.06);
+      --accent: #2563eb;
+      --accent-gradient: linear-gradient(135deg, #1e3a8a, #2563eb);
+      --accent-secondary: #fb7185;
+      --sel-bg: rgba(37, 99, 235, 0.18);
+      --chip-on-text: #fff;
+      --badge-bg: rgba(37, 99, 235, 0.2);
+      --badge-text: #93c5fd;
+    }
+    .panel.marca .row:nth-child(2) .badge {
+      background: rgba(251, 113, 133, 0.15); color: #fda4af;
+    }
+
+    /* Tema 2 — Productividad */
+    .panel.prod {
+      --bg: rgba(24, 24, 27, 0.95);
+      --text: #fafafa;
+      --muted: #71717a;
+      --border: rgba(255,255,255,0.08);
+      --surface: rgba(255,255,255,0.05);
+      --accent: #10b981;
+      --accent-gradient: linear-gradient(135deg, #059669, #10b981);
+      --sel-bg: rgba(16, 185, 129, 0.15);
+      --chip-on-text: #042f1a;
+      --badge-bg: rgba(16, 185, 129, 0.2);
+      --badge-text: #6ee7b7;
+    }
+
+    /* Tema 3 — Claro */
+    .panel.claro {
+      --bg: rgba(250, 250, 247, 0.96);
+      --text: #0b1020;
+      --muted: #64748b;
+      --border: rgba(11, 16, 32, 0.1);
+      --surface: rgba(11, 16, 32, 0.04);
+      --accent: #1e3a8a;
+      --accent-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      --sel-bg: rgba(30, 58, 138, 0.1);
+      --chip-on-text: #fff;
+      --badge-bg: rgba(30, 58, 138, 0.12);
+      --badge-text: #1e40af;
+    }
+    .panel.claro .icon-btn { color: #475569; }
+    .panel.claro .drag { color: #94a3b8; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="bar">
+    <h1>DeskFlow — 3 temas</h1>
+    <div class="tabs">
+      <button type="button" class="tab active" data-t="marca" data-panel="panel-marca">1 · Marca Sistemas y Más</button>
+      <button type="button" class="tab" data-t="prod" data-panel="panel-prod">2 · Productividad</button>
+      <button type="button" class="tab" data-t="claro" data-panel="panel-claro">3 · Claro premium</button>
+    </div>
+    <p class="hint" id="hint">Azul deep + coral (logo). Mejor alineación con sistemasymas.com y la confianza de compra.</p>
+  </div>
+
+  <p class="wallpaper-note">Simulación del panel compacto (340px) sobre un escritorio oscuro</p>
+
+  <div class="stage">
+    <div id="panel-marca" class="panel-wrap">
+      <div class="panel marca">
+        <div class="drag">· · · · ·</div>
+        <header>
+          <div class="logo">⊞</div>
+          <span class="title">DeskFlow</span>
+          <div class="icon-btn">⊞</div>
+          <div class="icon-btn">⚙</div>
+          <div class="icon-btn">—</div>
+        </header>
+        <div class="search-wrap">
+          <span>⌘</span>
+          <input type="text" value="fact" placeholder="Buscar…" readonly />
+        </div>
+        <div class="chips">
+          <span class="chip on">Todo</span>
+          <span class="chip">💼 Trabajo</span>
+          <span class="chip">📄 Facturas</span>
+        </div>
+        <div class="results">
+          <div class="row sel">
+            <div class="ico">📊</div>
+            <div><div class="name">Excel</div><div class="sub">Aplicación</div></div>
+            <span class="badge">💼 Trabajo</span>
+          </div>
+          <div class="row">
+            <div class="ico">📁</div>
+            <div><div class="name">Facturas 2026</div><div class="sub">…Contabilidad</div></div>
+            <span class="badge">📂 Documentos</span>
+          </div>
+        </div>
+        <div class="foot"><span>↵ abrir</span><span>2 resultados</span></div>
+      </div>
+      <div class="sell-box" style="margin-top:16px">
+        <h2>1 · Marca Sistemas y Más</h2>
+        <p>Coherente con tu logo (azul deep + coral) y la web bone/ink.</p>
+        <ul>
+          <li><strong>Vende mejor</strong> si la landing y la app se ven familia</li>
+          <li>Profesional, no “app morada genérica”</li>
+        </ul>
+        <div class="swatches">
+          <div class="swatch" style="background:#0B1020" title="ink"></div>
+          <div class="swatch" style="background:#1E3A8A" title="deep"></div>
+          <div class="swatch" style="background:#2563EB"></div>
+          <div class="swatch" style="background:#FB7185" title="coral"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-prod" class="panel-wrap hidden">
+      <div class="panel prod">
+        <div class="drag">· · · · ·</div>
+        <header>
+          <div class="logo">⊞</div>
+          <span class="title">DeskFlow</span>
+          <div class="icon-btn">⊞</div>
+          <div class="icon-btn">⚙</div>
+          <div class="icon-btn">—</div>
+        </header>
+        <div class="search-wrap">
+          <span>⌘</span>
+          <input type="text" value="fact" readonly />
+        </div>
+        <div class="chips">
+          <span class="chip on">Todo</span>
+          <span class="chip">💼 Trabajo</span>
+        </div>
+        <div class="results">
+          <div class="row sel">
+            <div class="ico">📊</div>
+            <div><div class="name">Excel</div><div class="sub">Aplicación</div></div>
+            <span class="badge">💼 Trabajo</span>
+          </div>
+          <div class="row">
+            <div class="ico">📁</div>
+            <div><div class="name">Facturas 2026</div><div class="sub">Carpeta indexada</div></div>
+            <span class="badge">📂 Documentos</span>
+          </div>
+        </div>
+        <div class="foot"><span>↵ abrir</span><span>2 resultados</span></div>
+      </div>
+      <div class="sell-box" style="margin-top:16px">
+        <h2>2 · Productividad neutra</h2>
+        <p>Zinc oscuro + verde esmeralda (estilo Raycast / utilidad).</p>
+        <ul>
+          <li>Mensaje: <strong>rápido y serio</strong></li>
+          <li>Menos “marca”, más herramienta universal</li>
+        </ul>
+        <div class="swatches">
+          <div class="swatch" style="background:#18181B"></div>
+          <div class="swatch" style="background:#10B981"></div>
+          <div class="swatch" style="background:#FAFAFA"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="panel-claro" class="panel-wrap hidden">
+      <div class="panel claro">
+        <div class="drag">· · · · ·</div>
+        <header>
+          <div class="logo">⊞</div>
+          <span class="title">DeskFlow</span>
+          <div class="icon-btn">⊞</div>
+          <div class="icon-btn">⚙</div>
+          <div class="icon-btn">—</div>
+        </header>
+        <div class="search-wrap">
+          <span>⌘</span>
+          <input type="text" value="fact" readonly />
+        </div>
+        <div class="chips">
+          <span class="chip on">Todo</span>
+          <span class="chip">💼 Trabajo</span>
+        </div>
+        <div class="results">
+          <div class="row sel">
+            <div class="ico">📊</div>
+            <div><div class="name">Excel</div><div class="sub">Aplicación</div></div>
+            <span class="badge">💼 Trabajo</span>
+          </div>
+          <div class="row">
+            <div class="ico">📁</div>
+            <div><div class="name">Facturas 2026</div><div class="sub">Carpeta</div></div>
+            <span class="badge">📂 Docs</span>
+          </div>
+        </div>
+        <div class="foot"><span>↵ abrir</span><span>2 resultados</span></div>
+      </div>
+      <div class="sell-box" style="margin-top:16px">
+        <h2>3 · Claro premium</h2>
+        <p>Fondo bone #FAFAF7 como tu web — destaca en screenshots.</p>
+        <ul>
+          <li>Muy legible de día</li>
+          <li>En escritorio muy colorido puede “flotar” mucho</li>
+        </ul>
+        <div class="swatches">
+          <div class="swatch" style="background:#FAFAF7;border-color:#ccc"></div>
+          <div class="swatch" style="background:#0B1020"></div>
+          <div class="swatch" style="background:#1E3A8A"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const hints = {
+      marca: 'Azul deep + coral (logo). Mejor alineación con sistemasymas.com y la confianza de compra.',
+      prod: 'Zinc + esmeralda. Sensación “launcher pro” universal, menos ligado a tu marca.',
+      claro: 'Panel claro bone/ink. Destaca en marketing; de noche en el escritorio puede cansar la vista.'
+    };
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.panel-wrap').forEach((p) => p.classList.add('hidden'));
+        document.getElementById(tab.dataset.panel).classList.remove('hidden');
+        document.getElementById('hint').textContent = hints[tab.dataset.t];
+      });
+    });
+  </script>
+</body>
+</html>

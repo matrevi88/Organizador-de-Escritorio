@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeskFlow — Comparar 3 direcciones de diseño</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --accent: #6366f1;
+      --accent2: #22d3ee;
+      --text: #f8fafc;
+      --muted: rgba(248,250,252,0.5);
+      --border: rgba(255,255,255,0.12);
+      --surface: rgba(255,255,255,0.06);
+    }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #0f0f14;
+      color: var(--text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    .mode-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      background: rgba(8,8,12,0.95);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    }
+    .mode-bar h1 { font-size: 14px; font-weight: 700; margin-right: 8px; }
+    .mode-bar h1 span { color: var(--muted); font-weight: 400; }
+    .mode-tabs { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+    .mode-tab {
+      padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .mode-tab:hover { color: var(--text); }
+    .mode-tab.active { background: var(--accent); border-color: transparent; color: #fff; }
+    .mode-tab.legacy.active { background: #7c6af7; }
+    .hint-box {
+      font-size: 11px; color: var(--muted); max-width: 420px; line-height: 1.45;
+      padding: 8px 12px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border);
+    }
+    .hint-box strong { color: var(--text); }
+    .desktop {
+      position: fixed; inset: 0; top: 56px;
+      background: linear-gradient(160deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+    }
+    .desktop-wallpaper {
+      position: absolute; inset: 0; opacity: 0.5;
+      background: radial-gradient(ellipse 70% 50% at 30% 20%, rgba(99,102,241,0.25), transparent 60%);
+    }
+    .view { display: none; position: absolute; inset: 0; }
+    .view.active { display: block; }
+    .hotkey-pill {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 500; padding: 8px 16px; border-radius: 20px;
+      background: rgba(0,0,0,0.75); border: 1px solid var(--border);
+      font-size: 11px; color: var(--muted);
+    }
+    kbd { background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: var(--text); }
+
+    .panel-actual {
+      position: fixed; right: 20px; top: 76px; bottom: 56px; width: 300px;
+      background: rgba(20,18,40,0.88); backdrop-filter: blur(24px);
+      border: 1px solid var(--border); border-radius: 18px;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .panel-actual .ph { padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 10px 12px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center; }
+    .stat .n { font-size: 16px; font-weight: 700; color: #7c6af7; }
+    .stat .l { font-size: 8px; color: var(--muted); text-transform: uppercase; }
+    .search-mini { margin: 0 12px 8px; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--muted); }
+    .groups-grid { flex: 1; overflow-y: auto; padding: 8px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .g-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; min-height: 72px; cursor: pointer; }
+    .g-card:hover { border-color: #7c6af7; }
+    .g-card h4 { font-size: 10px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+
+    .launcher-overlay {
+      position: fixed; inset: 56px 0 48px 0;
+      display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh;
+      background: rgba(0,0,0,0.55);
+    }
+    .launcher-box {
+      width: min(560px, 92vw);
+      background: rgba(15,15,20,0.96);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .launcher-input-wrap {
+      display: flex; align-items: center; gap: 12px; padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .launcher-input-wrap input {
+      flex: 1; background: none; border: none; outline: none;
+      font-size: 22px; color: var(--text);
+    }
+    .launcher-filters { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .filter-chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); cursor: pointer; }
+    .filter-chip.on { background: var(--accent); border-color: transparent; color: #fff; }
+    .launcher-results { max-height: 320px; overflow-y: auto; }
+    .result-row {
+      display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+      cursor: pointer; border-left: 3px solid transparent;
+    }
+    .result-row:hover, .result-row.sel { background: rgba(99,102,241,0.15); border-left-color: var(--accent); }
+    .result-row.hidden { display: none; }
+    .result-row .ri { width: 36px; height: 36px; border-radius: 10px; background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .result-row .name { font-size: 14px; font-weight: 600; }
+    .result-row .sub { font-size: 11px; color: var(--muted); }
+    .result-row .tag { font-size: 10px; color: var(--accent2); margin-left: auto; }
+    .launcher-foot { padding: 10px 16px; font-size: 10px; color: var(--muted); display: flex; gap: 16px; border-top: 1px solid var(--border); }
+
+    .zone {
+      position: absolute;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 12px;
+      padding: 10px 12px 14px;
+    }
+    .zone:hover { border-color: rgba(99,102,241,0.6); }
+    .zone-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .zone-apps { display: flex; flex-wrap: wrap; gap: 12px; }
+    .zone-app { width: 56px; text-align: center; cursor: pointer; padding: 6px; border-radius: 10px; }
+    .zone-app:hover { background: rgba(255,255,255,0.08); }
+    .zone-app .zi { font-size: 32px; }
+    .zone-app .zl { font-size: 10px; }
+    .zones-toolbar {
+      position: fixed; top: 68px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; padding: 6px 10px; background: rgba(0,0,0,0.6);
+      border-radius: 12px; border: 1px solid var(--border); z-index: 100;
+    }
+    .zones-toolbar button { font-size: 11px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; }
+
+    .spaces-bar {
+      position: fixed; top: 68px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 4px; padding: 4px; background: rgba(0,0,0,0.55);
+      border-radius: 14px; border: 1px solid var(--border); z-index: 100;
+    }
+    .space-btn {
+      padding: 8px 18px; border-radius: 10px; border: none; background: transparent;
+      color: var(--muted); font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    .space-btn.active { background: rgba(255,255,255,0.12); color: var(--text); }
+    .dock-wrap { position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 100; }
+    .dock {
+      display: flex; align-items: flex-end; gap: 4px; padding: 10px 16px 12px;
+      background: rgba(30,30,40,0.75); backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.15); border-radius: 20px;
+    }
+    .dock-set { display: none; align-items: flex-end; gap: 4px; }
+    .dock-set.active { display: flex; }
+    .dock-item { width: 52px; text-align: center; cursor: pointer; transition: transform 0.15s; }
+    .dock-item:hover { transform: translateY(-8px) scale(1.08); }
+    .dock-item .di { font-size: 40px; display: block; }
+
+    .flow-note {
+      position: fixed; right: 20px; top: 76px; width: 260px;
+      padding: 14px; background: rgba(0,0,0,0.7); border: 1px solid var(--accent);
+      border-radius: 14px; font-size: 12px; line-height: 1.5; z-index: 90;
+    }
+    .flow-note h3 { font-size: 13px; margin-bottom: 8px; color: var(--accent2); }
+    .flow-note ol { margin-left: 16px; color: var(--muted); }
+    .flow-note li { margin-bottom: 6px; }
+    .toast {
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+      padding: 10px 18px; background: #6366f1; border-radius: 10px; font-size: 13px;
+      opacity: 0; transition: opacity 0.25s; z-index: 2000; pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="mode-bar">
+    <h1>DeskFlow <span>— comparar diseños</span></h1>
+    <div class="mode-tabs">
+      <button type="button" class="mode-tab legacy" data-view="actual">0 · Actual (hoy)</button>
+      <button type="button" class="mode-tab active" data-view="launcher">1 · Launcher</button>
+      <button type="button" class="mode-tab" data-view="zones">2 · Zonas en escritorio</button>
+      <button type="button" class="mode-tab" data-view="dock">3 · Dock + espacios</button>
+    </div>
+    <div class="hint-box" id="hintBox">
+      <strong>Launcher:</strong> escribí en la barra (ej. «excel»). Clic en un resultado. Los filtros #trabajo acotan la lista.
+    </div>
+  </div>
+
+  <div class="desktop">
+    <div class="desktop-wallpaper"></div>
+
+    <div class="view" id="view-actual">
+      <div class="panel-actual">
+        <div class="ph"><span>⊞ DeskFlow</span><span style="color:var(--muted);font-size:11px">↻ ⚙ —</span></div>
+        <div class="stats">
+          <div class="stat"><div class="n">4</div><div class="l">Grupos</div></div>
+          <div class="stat"><div class="n">18</div><div class="l">Apps</div></div>
+          <div class="stat"><div class="n">3</div><div class="l">Perfiles</div></div>
+        </div>
+        <div class="search-mini">🔍 Buscar app...</div>
+        <div class="groups-grid">
+          <div class="g-card" data-action="Paso extra: expandir grupo Trabajo"><h4>💼 Trabajo</h4><div>🖥️ 📊 📧</div></div>
+          <div class="g-card" data-action="Grupo Diseño"><h4>🎨 Diseño</h4><div>🎨 📷</div></div>
+          <div class="g-card"><h4>🏠 Personal</h4><div>🎵 📁</div></div>
+          <div class="g-card"><h4>📄 Facturas</h4><div>📄 📁</div></div>
+        </div>
+      </div>
+      <div class="flow-note">
+        <h3>Flujo actual</h3>
+        <ol>
+          <li>Ctrl+Shift+D → panel lateral</li>
+          <li>Stats + búsqueda pequeña</li>
+          <li>Clic en tarjeta → expandir</li>
+          <li>Clic en icono → abrir</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="view active" id="view-launcher">
+      <div class="launcher-overlay" id="launcherBackdrop">
+        <div class="launcher-box">
+          <div class="launcher-input-wrap">
+            <span>⌘</span>
+            <input type="text" id="launcherInput" placeholder="Buscar apps, archivos, carpetas…" />
+            <span style="font-size:11px;color:var(--muted)">ESC</span>
+          </div>
+          <div class="launcher-filters">
+            <span class="filter-chip on" data-f="all">Todo</span>
+            <span class="filter-chip" data-f="trabajo">#trabajo</span>
+            <span class="filter-chip" data-f="facturas">#facturas</span>
+            <span class="filter-chip" data-f="pin">★ Fijados</span>
+          </div>
+          <div class="launcher-results">
+            <div class="result-row sel" data-keys="excel hoja" data-tags="trabajo" data-action="Abrir Excel">
+              <div class="ri">📊</div>
+              <div><div class="name">Microsoft Excel</div><div class="sub">Aplicación · Trabajo</div></div>
+              <span class="tag">#trabajo</span>
+            </div>
+            <div class="result-row" data-keys="correo mail outlook" data-tags="trabajo" data-action="Abrir Outlook">
+              <div class="ri">📧</div>
+              <div><div class="name">Outlook</div><div class="sub">Correo</div></div>
+              <span class="tag">#trabajo</span>
+            </div>
+            <div class="result-row" data-keys="fact cfdi carpeta" data-tags="facturas" data-action="Abrir carpeta Facturas">
+              <div class="ri">📁</div>
+              <div><div class="name">Facturas 2026</div><div class="sub">D:\Contabilidad\</div></div>
+              <span class="tag">#facturas</span>
+            </div>
+            <div class="result-row" data-keys="spot music" data-tags="personal" data-action="Abrir Spotify">
+              <div class="ri">🎵</div>
+              <div><div class="name">Spotify</div><div class="sub">Personal</div></div>
+              <span class="tag">#personal</span>
+            </div>
+            <div class="result-row" data-keys="pedido saas chrome" data-tags="trabajo pin" data-action="Abrir Mis pedidos">
+              <div class="ri">🌐</div>
+              <div><div class="name">Chrome — Mis pedidos</div><div class="sub">orden.mispedidos.mx</div></div>
+              <span class="tag">★ Fijado</span>
+            </div>
+            <div class="result-row hidden" id="noResults">
+              <div class="ri">🔍</div>
+              <div><div class="name">Sin resultados</div><div class="sub">Probá otro término</div></div>
+            </div>
+          </div>
+          <div class="launcher-foot"><span>↑↓ navegar</span><span>↵ abrir</span><span>⌘, ajustes</span></div>
+        </div>
+      </div>
+      <div class="flow-note">
+        <h3>Flujo Launcher</h3>
+        <ol>
+          <li>Ctrl+Shift+D → barra central</li>
+          <li>Escribís 2–3 letras</li>
+          <li>Enter → abre al instante</li>
+          <li>Grupos = etiquetas</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="view" id="view-zones">
+      <div class="zones-toolbar">
+        <button type="button" data-action="+ Nueva zona en el escritorio">+ Nueva zona</button>
+        <button type="button" data-action="Arrastrar archivos desde el escritorio">Arrastrar aquí</button>
+      </div>
+      <div class="zone" style="left:8%;top:14%;width:280px">
+        <div class="zone-title">● Trabajo</div>
+        <div class="zone-apps">
+          <div class="zone-app" data-action="Abrir Excel"><div class="zi">📊</div><div class="zl">Excel</div></div>
+          <div class="zone-app" data-action="Abrir Outlook"><div class="zi">📧</div><div class="zl">Correo</div></div>
+          <div class="zone-app" data-action="Abrir Chrome"><div class="zi">🌐</div><div class="zl">Chrome</div></div>
+        </div>
+      </div>
+      <div class="zone" style="right:10%;top:20%;width:220px">
+        <div class="zone-title">● Facturación</div>
+        <div class="zone-apps">
+          <div class="zone-app" data-action="Carpeta CFDI"><div class="zi">📄</div><div class="zl">CFDI</div></div>
+          <div class="zone-app" data-action="Facturas"><div class="zi">🧾</div><div class="zl">2026</div></div>
+        </div>
+      </div>
+      <div class="zone" style="left:18%;bottom:20%;width:240px">
+        <div class="zone-title">● Personal</div>
+        <div class="zone-apps">
+          <div class="zone-app" data-action="Spotify"><div class="zi">🎵</div><div class="zl">Música</div></div>
+          <div class="zone-app" data-action="Fotos"><div class="zi">📷</div><div class="zl">Fotos</div></div>
+        </div>
+      </div>
+      <div class="flow-note">
+        <h3>Flujo Zonas</h3>
+        <ol>
+          <li>Capa transparente en el escritorio</li>
+          <li>Cajas con título</li>
+          <li>Un clic → abrir</li>
+          <li>Arrastrar para agregar</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="view" id="view-dock">
+      <div class="spaces-bar">
+        <button type="button" class="space-btn active" data-space="trabajo">💼 Trabajo</button>
+        <button type="button" class="space-btn" data-space="personal">🏠 Personal</button>
+        <button type="button" class="space-btn" data-space="gaming">🎮 Ocio</button>
+      </div>
+      <div class="dock-wrap">
+        <div class="dock">
+          <div class="dock-set active" data-space="trabajo">
+            <div class="dock-item" data-action="Excel"><span class="di">📊</span></div>
+            <div class="dock-item" data-action="Mail"><span class="di">📧</span></div>
+            <div class="dock-item" data-action="Chrome"><span class="di">🌐</span></div>
+            <div class="dock-item" data-action="Archivos"><span class="di">📁</span></div>
+            <div class="dock-item" data-action="Chat"><span class="di">💬</span></div>
+          </div>
+          <div class="dock-set" data-space="personal">
+            <div class="dock-item" data-action="Spotify"><span class="di">🎵</span></div>
+            <div class="dock-item" data-action="Fotos"><span class="di">📷</span></div>
+            <div class="dock-item" data-action="Netflix"><span class="di">🎬</span></div>
+            <div class="dock-item" data-action="Tienda"><span class="di">🛒</span></div>
+          </div>
+          <div class="dock-set" data-space="gaming">
+            <div class="dock-item" data-action="Steam"><span class="di">🎮</span></div>
+            <div class="dock-item" data-action="Discord"><span class="di">💬</span></div>
+            <div class="dock-item" data-action="Twitch"><span class="di">📺</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="flow-note">
+        <h3>Flujo Dock</h3>
+        <ol>
+          <li>Barra abajo (o al mostrar DeskFlow)</li>
+          <li>Pestaña cambia todo el dock</li>
+          <li>Hover agranda icono</li>
+          <li>Familiar tipo Mac</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="hotkey-pill">Atajo simulado: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd></div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const hints = {
+      actual: 'Actual: panel lateral. Clic en tarjeta de grupo — hace falta expandir antes de abrir una app.',
+      launcher: 'Launcher: escribí «excel» o «fact». Usá filtros #trabajo. Clic en fila = abrir.',
+      zones: 'Zonas: cajas sobre el escritorio. Clic en cada icono. Ideal para capturas de marketing.',
+      dock: 'Dock: cambiá Trabajo / Personal / Ocio — los iconos del dock cambian. Pasá el mouse para ver el efecto.'
+    };
+
+    const toastEl = document.getElementById('toast');
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2200);
+    }
+
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const v = tab.dataset.view;
+        document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
+        document.getElementById('view-' + v).classList.add('active');
+        document.getElementById('hintBox').textContent = hints[v];
+        if (v === 'launcher') document.getElementById('launcherInput').focus();
+      });
+    });
+
+    document.getElementById('hintBox').textContent = hints.launcher;
+
+    function filterLauncher() {
+      const q = document.getElementById('launcherInput').value.trim().toLowerCase();
+      const f = document.querySelector('.filter-chip.on')?.dataset.f || 'all';
+      let visible = 0;
+      document.querySelectorAll('.result-row:not(#noResults)').forEach(row => {
+        const keys = (row.dataset.keys || '') + ' ' + (row.querySelector('.name')?.textContent || '').toLowerCase();
+        const tags = row.dataset.tags || '';
+        const matchQ = !q || keys.includes(q);
+        const matchF = f === 'all' || (f === 'pin' && tags.includes('pin')) || tags.includes(f);
+        const show = matchQ && matchF;
+        row.classList.toggle('hidden', !show);
+        if (show) visible++;
+      });
+      document.getElementById('noResults').classList.toggle('hidden', visible > 0);
+    }
+
+    document.getElementById('launcherInput').addEventListener('input', filterLauncher);
+    document.querySelectorAll('.filter-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+        chip.classList.add('on');
+        filterLauncher();
+      });
+    });
+
+    document.getElementById('launcherBackdrop').addEventListener('click', e => {
+      if (e.target.id === 'launcherBackdrop') toast('Clic fuera → ocultar ventana');
+    });
+
+    document.querySelectorAll('[data-action]').forEach(el => {
+      el.addEventListener('click', () => toast(el.dataset.action || 'Acción'));
+    });
+
+    document.querySelectorAll('.space-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.space-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const space = btn.dataset.space;
+        document.querySelectorAll('.dock-set').forEach(s => {
+          s.classList.toggle('active', s.dataset.space === space);
+        });
+        toast('Espacio: ' + btn.textContent.trim());
+      });
+    });
+
+    document.getElementById('launcherInput').focus();
+  </script>
+</body>
+</html>
